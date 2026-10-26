@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NEOSENSE — Тема</title>
+<link rel="stylesheet" href="/style.css" />
+<link rel="icon" id="favicon" type="image/png" href="/favicon.png" />
+<script>(function(){try{var s=localStorage.getItem("neosense_theme")||"system";var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var e=(s==="system")?(d?"dark":"light"):s;document.documentElement.setAttribute("data-theme",e);var l=document.getElementById("favicon");if(l)l.href=(e==="dark")?"/favicon-white.png":"/favicon-black.png";}catch(err){}})();</script>
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+</head>
+<body>
+  <nav class="nav" data-nav></nav>
+
+  <div class="container-narrow">
+    <div style="margin-top:20px"><a class="ulink" href="/forum">← Назад к форуму</a></div>
+
+    <h1 class="thread-title" id="thread-title">Загрузка…</h1>
+    <div class="thread-sub" id="thread-sub"></div>
+
+    <div id="posts"></div>
+
+    <div class="composer" id="reply-box" style="display:none">
+      <h3>Ответить</h3>
+      <textarea id="reply-body" placeholder="Твой ответ…" maxlength="8000"></textarea>
+      <button class="btn btn-primary" id="reply-btn" style="width:auto">Отправить</button>
+      <div id="reply-result" class="result"></div>
+    </div>
+    <div class="note" id="reply-login" style="display:none">
+      <a class="ulink" href="/profile">Войди</a>, чтобы ответить в теме.
+    </div>
+  </div>
+
+<script src="/app.js"></script>
+<script>
+  NS.renderNav("forum");
+
+  const threadId = (location.pathname.match(/\/thread\/(\d+)/) || [])[1];
+  const titleEl = document.getElementById("thread-title");
+  const subEl = document.getElementById("thread-sub");
+  const postsEl = document.getElementById("posts");
+
+  function renderPosts(thread) {
+    postsEl.innerHTML = thread.posts.map((p, idx) =>
+      '<div class="post' + (idx === 0 ? ' post-op' : '') + '">' +
+          '<div class="post-head">' +
+          NS.avatarHTML(p.author, p.authorUid, "post-avatar") +
+          '<div class="post-author">' + NS.profileLink(p.author, p.authorUid) + '</div>' +
+          '<div class="post-time">' + NS.fmtAgo(p.createdAt) + '</div>' +
+        '</div>' +
+        '<div class="post-body">' + NS.escape(p.body) + '</div>' +
+      '</div>'
+    ).join("");
+  }
+
+  async function load() {
+    const { ok, data } = await NS.api("/api/site?action=thread&id=" + encodeURIComponent(threadId), { method: "GET" });
+    if (!ok || !data || !data.ok) {
+      titleEl.textContent = "Тема не найдена";
+      subEl.textContent = "";
+      postsEl.innerHTML = '<div class="empty">Такой темы нет.</div>';
+      return;
+    }
+    const t = data.thread;
+    document.title = "NEOSENSE — " + t.title;
+    titleEl.textContent = t.title;
+    subEl.innerHTML = "Автор: " + NS.profileLink(t.author, t.authorUid) +
+      " · создана " + NS.fmtAgo(t.createdAt) + " · ответов: " + t.replies;
+    renderPosts(t);
+  }
+
+  async function init() {
+    const me = await NS.requireAuth();
+    if (!me) return;
+    NS.renderNav("forum");
+    document.getElementById("reply-box").style.display = "block";
+    document.getElementById("reply-login").style.display = "none";
+    load();
+  }
+
+  document.getElementById("reply-btn").addEventListener("click", async () => {
+    const body = document.getElementById("reply-body").value.trim();
+    const out = document.getElementById("reply-result");
+    if (!body) {
+      out.className = "result err";
+      out.textContent = "Напиши текст ответа.";
+      return;
+    }
+    const res = await NS.api("/api/site?action=thread&id=" + encodeURIComponent(threadId), {
+      method: "POST",
+      body: { body },
+    });
+    if (res.ok && res.data && res.data.ok) {
+      document.getElementById("reply-body").value = "";
+      out.style.display = "none";
+      load();
+    } else {
+      out.className = "result err";
+      out.textContent = res.data && res.data.error === "unauthorized"
+        ? "Нужно войти в аккаунт."
+        : "Не удалось отправить ответ.";
+    }
+  });
+
+  if (!threadId) {
+    titleEl.textContent = "Некорректная тема";
+  } else {
+    init();
+  }
+</script>
+</body>
+</html>

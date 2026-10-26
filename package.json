@@ -1,0 +1,15 @@
+{
+  "name": "velocity-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HTTP API для подписок velocity-cs2 (Vercel serverless)",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "redis": "^4.7.0"
+  },
+  "scripts": {
+    "dev": "node dev.js"
+  }
+}

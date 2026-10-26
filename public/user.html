@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NEOSENSE — Профиль</title>
+<link rel="stylesheet" href="/style.css" />
+<link rel="icon" id="favicon" type="image/png" href="/favicon.png" />
+<script>(function(){try{var s=localStorage.getItem("neosense_theme")||"system";var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var e=(s==="system")?(d?"dark":"light"):s;document.documentElement.setAttribute("data-theme",e);var l=document.getElementById("favicon");if(l)l.href=(e==="dark")?"/favicon-white.png":"/favicon-black.png";}catch(err){}})();</script>
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+</head>
+<body>
+  <nav class="nav" data-nav></nav>
+
+  <div class="card profile-wide">
+    <div id="loading" class="empty">Загрузка профиля…</div>
+
+    <div id="content" style="display:none">
+      <div class="profile-head">
+        <div class="avatar" id="avatar-box">
+          <span class="avatar-letter" id="avatar-letter">?</span>
+          <img class="avatar-img" id="avatar-img" alt="" style="display:none" onload="var l=document.getElementById('avatar-letter');if(l)l.style.display='none'" onerror="this.style.display='none'" />
+        </div>
+        <div class="who">
+          <h2 id="u-name">—</h2>
+          <div class="uid">UID <span id="u-uid">—</span></div>
+          <div class="prem-badge" id="prem-badge" style="display:none;margin-top:8px">
+            <span class="prem-pill" id="prem-pill">Member</span>
+            <span class="prem-exp" id="prem-exp" style="display:none;margin-left:8px;color:var(--muted);font-size:12px">до —</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-row stat-row">
+        <span class="k">На сайте с</span>
+        <span class="v" id="u-created">—</span>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><b id="u-threads">0</b><span>Тем</span></div>
+        <div class="stat"><b id="u-posts">0</b><span>Сообщений</span></div>
+        <div class="stat"><b id="u-activity">—</b><span>Активность</span></div>
+      </div>
+
+      <div id="u-own" style="margin-top:16px;display:none">
+        <a href="/profile" class="btn btn-ghost" style="width:100%">Это ты — открыть свой профиль</a>
+      </div>
+    </div>
+
+    <div id="notfound" class="empty" style="display:none">Профиль не найден.</div>
+  </div>
+
+<style>
+.stat-row { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+.stat-row .k { color: var(--muted); }
+.stat-row .v { font-weight: 600; }
+.prem-badge { display:flex; align-items:center; }
+.prem-pill { display: inline-block; padding: 6px 12px; border-radius: 10px; font-weight: 800; font-size: 13px; letter-spacing: 0.3px; }
+.prem-pill.premium { background: linear-gradient(135deg, var(--accent), #4a7fd4); color: #fff; box-shadow: 0 6px 16px rgba(111,168,255,0.35); }
+.prem-pill.member { background: var(--surface-hover); color: var(--muted); border: 1px solid var(--border); }
+.prem-exp { opacity: 0; transition: opacity 0.15s; }
+.prem-badge:hover .prem-exp { opacity: 1; }
+</style>
+
+<script src="/app.js"></script>
+<script>
+  NS.renderNav(null);
+  const uid = (location.pathname.match(/\/u\/([^\/]+)/) || [])[1];
+
+  function setAvatarImg(id) {
+    const img = document.getElementById("avatar-img");
+    if (!id) return;
+    img.style.display = "";
+    img.src = NS.avatarUrl(id);
+  }
+
+  (async () => {
+    const me = await NS.me();
+    NS.renderNav(null);
+
+    const loading = document.getElementById("loading");
+    const content = document.getElementById("content");
+    const notfound = document.getElementById("notfound");
+
+    if (!uid) {
+      loading.style.display = "none";
+      notfound.style.display = "block";
+      return;
+    }
+
+    const { ok, data } = await NS.api("/api/site?action=profile&uid=" + encodeURIComponent(uid), { method: "GET" });
+    loading.style.display = "none";
+
+    if (!ok || !data || !data.ok) {
+      notfound.style.display = "block";
+      return;
+    }
+
+    document.title = "NEOSENSE — " + data.username;
+    document.getElementById("avatar-letter").textContent = (data.username || "?").charAt(0).toUpperCase();
+    setAvatarImg(data.uid);
+    document.getElementById("u-name").textContent = data.username || "—";
+    document.getElementById("u-uid").textContent = data.uid || "—";
+
+    const expiresAtMs = data.expiresAtMs || 0;
+    const active = data.active || (expiresAtMs > Date.now());
+
+    const pill = document.getElementById("prem-pill");
+    const pbox = document.getElementById("prem-badge");
+    const expEl = document.getElementById("prem-exp");
+    if (active) {
+      pill.textContent = "Premium";
+      pill.className = "prem-pill premium";
+      if (expiresAtMs) {
+        expEl.textContent = "до " + NS.fmtDate(expiresAtMs);
+        expEl.style.display = "inline";
+      }
+      pbox.style.display = "flex";
+    } else {
+      pill.textContent = "Member";
+      pill.className = "prem-pill member";
+      expEl.style.display = "none";
+      pbox.style.display = "flex";
+    }
+
+    document.getElementById("u-created").textContent = NS.fmtDate(data.createdAtMs);
+    const f = data.forum || { threads: 0, posts: 0, lastActivityMs: null };
+    document.getElementById("u-threads").textContent = f.threads || 0;
+    document.getElementById("u-posts").textContent = f.posts || 0;
+    document.getElementById("u-activity").textContent = f.lastActivityMs ? NS.fmtAgo(f.lastActivityMs) : "—";
+
+    if (me && String(me.uid) === String(data.uid)) {
+      document.getElementById("u-own").style.display = "block";
+    }
+
+    content.style.display = "block";
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NEOSENSE — Форум</title>
+<link rel="stylesheet" href="/style.css" />
+<link rel="icon" id="favicon" type="image/png" href="/favicon.png" />
+<script>(function(){try{var s=localStorage.getItem("neosense_theme")||"system";var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var e=(s==="system")?(d?"dark":"light"):s;document.documentElement.setAttribute("data-theme",e);var l=document.getElementById("favicon");if(l)l.href=(e==="dark")?"/favicon-white.png":"/favicon-black.png";}catch(err){}})();</script>
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+</head>
+<body>
+  <nav class="nav" data-nav></nav>
+
+  <div class="container-narrow">
+    <div class="forum-head">
+      <div>
+        <h1>Форум</h1>
+        <div class="sub" id="forum-sub">Обсуждения, гайды и поддержка</div>
+      </div>
+      <button class="btn btn-primary" id="new-btn" style="width:auto;display:none">Новая тема</button>
+    </div>
+
+    <div class="composer" id="composer" style="display:none">
+      <h3>Создать тему</h3>
+      <input id="new-title" type="text" placeholder="Заголовок темы" maxlength="120" />
+      <textarea id="new-body" placeholder="Текст сообщения…" maxlength="8000"></textarea>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" id="create-btn" style="width:auto">Опубликовать</button>
+        <button class="btn btn-ghost" id="cancel-btn" style="width:auto">Отмена</button>
+      </div>
+      <div id="composer-result" class="result"></div>
+    </div>
+
+    <div class="threads" id="threads">
+      <div class="empty">Загрузка…</div>
+    </div>
+  </div>
+
+<script src="/app.js"></script>
+<script>
+  NS.renderNav("forum");
+  const listEl = document.getElementById("threads");
+  const newBtn = document.getElementById("new-btn");
+  const composer = document.getElementById("composer");
+  const composerResult = document.getElementById("composer-result");
+
+  function renderThreads(threads) {
+    if (!threads.length) {
+      listEl.innerHTML = '<div class="empty">Пока нет тем. Стань первым!</div>';
+      return;
+    }
+    listEl.innerHTML = threads.map((t) =>
+      '<a class="thread-row" href="/thread/' + t.id + '">' +
+        '<div class="tr-main">' +
+          '<div class="tr-title">' + NS.escape(t.title) + '</div>' +
+          '<div class="tr-meta">' + NS.escape(t.author) +
+            ' · создана ' + NS.fmtAgo(t.createdAt) +
+            ' · последний ответ: ' + NS.escape(t.lastAuthor || t.author) + ' ' + NS.fmtAgo(t.lastAt) +
+          '</div>' +
+        '</div>' +
+        '<div class="tr-replies"><b>' + t.replies + '</b>ответов</div>' +
+      '</a>'
+    ).join("");
+  }
+
+  async function load() {
+    const { data } = await NS.api("/api/site?action=forum", { method: "GET" });
+    renderThreads((data && data.threads) || []);
+  }
+
+  async function init() {
+    const me = await NS.requireAuth();
+    if (!me) return;
+    NS.renderNav("forum");
+    newBtn.style.display = "inline-block";
+    document.getElementById("forum-sub").textContent = "Ты вошёл как " + me.username;
+    load();
+  }
+
+  newBtn.addEventListener("click", () => {
+    composer.style.display = "block";
+    document.getElementById("new-title").focus();
+  });
+  document.getElementById("cancel-btn").addEventListener("click", () => {
+    composer.style.display = "none";
+    composerResult.style.display = "none";
+  });
+  document.getElementById("create-btn").addEventListener("click", async () => {
+    const title = document.getElementById("new-title").value.trim();
+    const body = document.getElementById("new-body").value.trim();
+    if (title.length < 3) {
+      composerResult.className = "result err";
+      composerResult.textContent = "Заголовок минимум 3 символа.";
+      return;
+    }
+    if (!body) {
+      composerResult.className = "result err";
+      composerResult.textContent = "Напиши текст сообщения.";
+      return;
+    }
+    const { ok, data } = await NS.api("/api/site?action=forum", { method: "POST", body: { title, body } });
+    if (ok && data && data.ok) {
+      location.href = "/thread/" + data.thread.id;
+    } else {
+      composerResult.className = "result err";
+      composerResult.textContent = data && data.error === "unauthorized"
+        ? "Нужно войти в аккаунт."
+        : "Не удалось создать тему.";
+    }
+  });
+
+  init();
+</script>
+</body>
+</html>

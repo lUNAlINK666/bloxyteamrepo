@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NEOSENSE — Профиль</title>
+<link rel="stylesheet" href="/style.css" />
+<link rel="icon" id="favicon" type="image/png" href="/favicon.png" />
+<script>(function(){try{var s=localStorage.getItem("neosense_theme")||"system";var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var e=(s==="system")?(d?"dark":"light"):s;document.documentElement.setAttribute("data-theme",e);var l=document.getElementById("favicon");if(l)l.href=(e==="dark")?"/favicon-white.png":"/favicon-black.png";}catch(err){}})();</script>
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+</head>
+<body>
+  <nav class="nav" data-nav></nav>
+
+  <div class="container-narrow">
+    <!-- Форма входа (если не залогинен) -->
+    <div class="card profile-card" id="login-card" style="display:none">
+      <h2>Вход в аккаунт</h2>
+      <div class="sub">Войди, чтобы увидеть свой UID и подписку</div>
+
+      <form id="login-form">
+        <input id="username" type="text" placeholder="Никнейм" maxlength="32" autocomplete="username" />
+        <input id="password" type="password" placeholder="Пароль" autocomplete="current-password" />
+        <button type="submit" class="btn btn-primary" id="login-btn">Войти</button>
+      </form>
+
+      <div id="result" class="result"></div>
+
+      <div class="note">Нет аккаунта? <a href="/register" style="color:#6fa8ff">Зарегистрируйся</a></div>
+    </div>
+
+    <!-- Свой профиль -->
+    <div class="card profile-wide" id="profile-view" style="display:none">
+      <div class="profile-head">
+        <div class="avatar avatar-editable" id="avatar-box" title="Сменить аватар">
+          <span class="avatar-letter" id="avatar-letter">?</span>
+          <img class="avatar-img" id="avatar-img" alt="" style="display:none" onload="var l=document.getElementById('avatar-letter');if(l)l.style.display='none'" onerror="this.style.display='none'" />
+          <div class="avatar-overlay">Сменить</div>
+        </div>
+        <input type="file" id="avatar-input" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" />
+        <div class="who">
+          <h2 id="pv-name">—</h2>
+          <div class="uid">UID <span id="pv-uid">—</span></div>
+        </div>
+      </div>
+      <div id="avatar-status" class="result" style="margin:-6px 0 12px"></div>
+
+      <div class="p-row">
+        <span class="k">Статус подписки</span>
+        <span class="v"><span class="badge" id="pv-badge">—</span></span>
+      </div>
+      <div class="p-row">
+        <span class="k">Дней осталось</span>
+        <span class="v" id="pv-days">—</span>
+      </div>
+      <div class="p-row">
+        <span class="k">Подписка активна до</span>
+        <span class="v" id="pv-expires">—</span>
+      </div>
+      <div class="p-row">
+        <span class="k">Аккаунт создан</span>
+        <span class="v" id="pv-created">—</span>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><b id="pv-threads">0</b><span>Тем</span></div>
+        <div class="stat"><b id="pv-posts">0</b><span>Сообщений</span></div>
+        <div class="stat"><b id="pv-activity">—</b><span>Активность</span></div>
+      </div>
+
+      <div class="note">Этот UID вводится в чите NEOSENSE для активации.</div>
+
+      <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+        <a href="/buy" class="btn btn-primary" style="flex:1">Продлить подписку</a>
+        <a href="javascript:void(0)" id="view-public" class="btn btn-ghost" style="flex:1">Публичный профиль</a>
+      </div>
+      <div style="margin-top:12px">
+        <a href="javascript:void(0)" id="logout-link" style="color:#f87171;font-size:13px">Выйти</a>
+      </div>
+    </div>
+  </div>
+
+<script src="/app.js"></script>
+<script>
+  NS.renderNav("profile");
+  const loginCard = document.getElementById("login-card");
+  const view = document.getElementById("profile-view");
+  const resultEl = document.getElementById("result");
+
+  function fillProfile(data) {
+    document.getElementById("avatar-letter").textContent = (data.username || "?").charAt(0).toUpperCase();
+    setAvatarImg(data.uid);
+    document.getElementById("pv-name").textContent = data.username || "—";
+    document.getElementById("pv-uid").textContent = data.uid || "—";
+    document.getElementById("pv-days").textContent = data.active
+      ? (data.expiresAtMs ? Math.max(0, Math.ceil((data.expiresAtMs - Date.now()) / 86400000)) + " дней" : "—")
+      : "0";
+    document.getElementById("pv-expires").textContent = NS.fmtDate(data.expiresAtMs);
+    document.getElementById("pv-created").textContent = NS.fmtDate(data.createdAtMs);
+    const badge = document.getElementById("pv-badge");
+    badge.className = "badge " + (data.active ? "active" : "expired");
+    badge.textContent = data.active ? "Активна" : "Истекла";
+    const f = data.forum || { threads: 0, posts: 0, lastActivityMs: null };
+    document.getElementById("pv-threads").textContent = f.threads || 0;
+    document.getElementById("pv-posts").textContent = f.posts || 0;
+    document.getElementById("pv-activity").textContent = f.lastActivityMs ? NS.fmtAgo(f.lastActivityMs) : "—";
+  }
+
+  function setAvatarImg(uid, bust) {
+    const img = document.getElementById("avatar-img");
+    if (!uid) {
+      img.style.display = "none";
+      img.removeAttribute("src");
+      return;
+    }
+    img.style.display = "";
+    img.src = NS.avatarUrl(uid, bust);
+  }
+
+  const avatarBox = document.getElementById("avatar-box");
+  const avatarInput = document.getElementById("avatar-input");
+  const avatarStatusEl = document.getElementById("avatar-status");
+
+  function showAvatarStatus(text, isErr) {
+    avatarStatusEl.style.display = "block";
+    avatarStatusEl.className = "result " + (isErr ? "err" : "ok");
+    avatarStatusEl.textContent = text;
+  }
+
+  function avatarError(data) {
+    if (data && data.error === "invalid image") return "Файл не подошёл. Нужна картинка до 512 КБ.";
+    if (data && data.error === "unauthorized") return "Нужно войти в аккаунт.";
+    return "Не удалось загрузить аватар.";
+  }
+
+  avatarBox.addEventListener("click", () => avatarInput.click());
+  avatarInput.addEventListener("change", async () => {
+    const file = avatarInput.files && avatarInput.files[0];
+    if (!file) return;
+    avatarBox.classList.add("loading");
+    avatarStatusEl.style.display = "none";
+    try {
+      const { ok, data } = await NS.setAvatar(file);
+      if (ok && data && data.ok) {
+        const me = NS.savedUser();
+        if (me && me.uid) setAvatarImg(me.uid, true);
+        NS.refreshNavAvatar(true);
+        showAvatarStatus("Аватар обновлён", false);
+      } else {
+        showAvatarStatus(avatarError(data), true);
+      }
+    } catch (e) {
+      showAvatarStatus("Не удалось обработать картинку.", true);
+    } finally {
+      avatarBox.classList.remove("loading");
+      avatarInput.value = "";
+    }
+  });
+
+  async function refresh() {
+    const me = await NS.me();
+    if (me) {
+      const next = new URLSearchParams(location.search).get("next");
+      if (next && next.startsWith("/")) {
+        location.replace(next);
+        return;
+      }
+      NS.renderNav("profile");
+      loginCard.style.display = "none";
+      view.style.display = "block";
+      const { data } = await NS.api("/api/site?action=profile&uid=" + encodeURIComponent(me.uid || ""), { method: "GET" });
+      fillProfile(data && data.ok ? data : me);
+      document.getElementById("view-public").onclick = () => {
+        location.href = "/u/" + encodeURIComponent(me.uid || "");
+      };
+    } else {
+      view.style.display = "none";
+      loginCard.style.display = "block";
+    }
+  }
+
+  document.getElementById("logout-link").addEventListener("click", async () => {
+    await NS.logout();
+    location.reload();
+  });
+
+  document.getElementById("login-form").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+    const btn = document.getElementById("login-btn");
+    if (!username || !password) {
+      resultEl.className = "result err";
+      resultEl.textContent = "Введи никнейм и пароль.";
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = "Вход...";
+    const { ok, data } = await NS.api("/api/site?action=login", {
+      method: "POST",
+      body: { username, password, action: "login" },
+    });
+    btn.disabled = false;
+    btn.textContent = "Войти";
+    if (ok && data && data.ok) {
+      NS.setSession(data);
+      refresh();
+    } else {
+      resultEl.className = "result err";
+      resultEl.textContent = data && data.error === "bad credentials"
+        ? "Неверный никнейм или пароль."
+        : "Не удалось войти.";
+    }
+  });
+
+  refresh();
+</script>
+</body>
+</html>

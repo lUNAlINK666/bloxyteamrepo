@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NEOSENSE — Регистрация</title>
+<link rel="stylesheet" href="/style.css" />
+<link rel="icon" id="favicon" type="image/png" href="/favicon.png" />
+<script>(function(){try{var s=localStorage.getItem("neosense_theme")||"system";var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var e=(s==="system")?(d?"dark":"light"):s;document.documentElement.setAttribute("data-theme",e);var l=document.getElementById("favicon");if(l)l.href=(e==="dark")?"/favicon-white.png":"/favicon-black.png";}catch(err){}})();</script>
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+</head>
+<body>
+  <nav class="nav" data-nav></nav>
+
+  <div class="card">
+    <h2>Регистрация</h2>
+    <div class="sub">Создай аккаунт — UID присвоится автоматически по порядку</div>
+
+    <form id="reg-form">
+      <input id="username" type="text" placeholder="Никнейм (3–32 символа)" maxlength="32" autocomplete="username" />
+      <input id="password" type="password" placeholder="Пароль (от 4 символов)" minlength="4" maxlength="64" autocomplete="new-password" />
+      <button type="submit" class="btn btn-primary">Создать аккаунт</button>
+    </form>
+
+    <div id="result" class="result"></div>
+
+    <div class="note">Уже есть аккаунт? <a href="/profile" style="color:#6fa8ff">Войти</a></div>
+  </div>
+
+<script src="/app.js"></script>
+<script>
+  NS.renderNav(null);
+  const form = document.getElementById("reg-form");
+  const resultEl = document.getElementById("result");
+  const usernameEl = document.getElementById("username");
+  const passwordEl = document.getElementById("password");
+  const btn = form.querySelector("button");
+
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    resultEl.className = "result";
+    resultEl.style.display = "none";
+    btn.disabled = true;
+    btn.textContent = "Создание...";
+
+    const { ok, data } = await NS.api("/api/site?action=login", {
+      method: "POST",
+      body: { username: usernameEl.value.trim(), password: passwordEl.value, action: "register" },
+    });
+
+    btn.disabled = false;
+    btn.textContent = "Создать аккаунт";
+
+    if (ok && data && data.ok) {
+      NS.setSession(data);
+      resultEl.className = "result ok";
+      resultEl.innerHTML = "Аккаунт создан! Твой UID: <b>" + NS.escape(data.uid) + "</b>.<br>Переходим в профиль…";
+      setTimeout(() => (location.href = "/u/" + encodeURIComponent(data.uid || "")), 900);
+    } else {
+      resultEl.className = "result err";
+      resultEl.textContent = data && data.error === "username taken"
+        ? "Этот никнейм уже занят."
+        : data && data.error === "invalid password"
+          ? "Пароль слишком короткий (минимум 4 символа)."
+          : data && data.error === "invalid username"
+            ? "Никнейм: 3–32 символа (буквы, цифры, _ . -)."
+            : "Не удалось создать аккаунт.";
+    }
+  });
+</script>
+</body>
+</html>

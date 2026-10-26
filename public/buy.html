@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NEOSENSE — Купить</title>
+<link rel="stylesheet" href="/style.css" />
+<link rel="icon" id="favicon" type="image/png" href="/favicon.png" />
+<script>(function(){try{var s=localStorage.getItem("neosense_theme")||"system";var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var e=(s==="system")?(d?"dark":"light"):s;document.documentElement.setAttribute("data-theme",e);var l=document.getElementById("favicon");if(l)l.href=(e==="dark")?"/favicon-white.png":"/favicon-black.png";}catch(err){}})();</script>
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+</head>
+<body>
+  <nav class="nav" data-nav></nav>
+
+  <div class="container-narrow">
+    <h1 style="font-size:26px;margin-top:20px">Покупка</h1>
+    <div class="sub" style="color:var(--muted);margin-top:4px">Выбери продукт и продолжительность подписки</div>
+
+    <div class="duration-preview">
+      <div class="dur-row">
+        <div class="dur-labels">
+          <span>7 дн</span><span>1 мес</span><span>3 мес</span><span>6 мес</span><span>12 мес</span>
+        </div>
+        <input type="range" id="global-dur" min="0" max="4" step="1" value="1" />
+      </div>
+    </div>
+
+    <div class="products">
+      <div class="product-card" data-prod="cs2">
+        <div class="prod-header">
+          <div class="prod-left">
+            <img class="prod-icon" src="/cs2.png" alt="cs2" id="cs2-icon" />
+            <div class="prod-info">
+              <div class="prod-title">Counter-Strike 2</div>
+              <div class="prod-status">Status: Undetected</div>
+            </div>
+          </div>
+          <div class="prod-right">
+            <div class="prod-price" id="p-cs2-price">160 ₽</div>
+            <button class="btn btn-primary btn-sm" id="p-cs2-buy">Купить</button>
+          </div>
+        </div>
+        <div class="prod-body" id="p-cs2-body">
+          <div class="buy-block">
+            <div class="buy-line">
+              <span>Период</span>
+              <span id="p-cs2-period">30 дней</span>
+            </div>
+            <div class="buy-line">
+              <span>Сумма</span>
+              <span id="p-cs2-sum">160 ₽</span>
+            </div>
+            <div class="prod-desc-grid" style="margin-top:14px">
+              <div class="prod-desc-img">
+                <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1600&auto=format&fit=crop" alt="cs2 preview" style="width:100%;height:100%;object-fit:cover;border-radius:12px" />
+              </div>
+              <div class="prod-desc-text">
+                <h3 style="margin-bottom:6px">Описание продукта</h3>
+                <p style="color:var(--muted);line-height:1.6;font-size:14px">Приватный чит для Counter-Strike 2. Актуальные обходы, стабильная работа, приоритетные обновления для подписчиков.</p>
+              </div>
+            </div>
+            <button class="btn btn-primary" id="p-cs2-confirm" style="margin-top:14px">Купить</button>
+            <div id="p-cs2-res" class="result" style="margin-top:10px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<style>
+.duration-preview { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 18px; margin-top:18px; }
+.dur-row { display:flex; flex-direction:column; gap:10px; }
+.dur-labels { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); padding:0 4px; }
+#global-dur { width:100%; }
+
+.product-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; margin-top:14px; overflow:hidden; transition:box-shadow .2s,border-color .2s; }
+.product-card.expanded { border-color:var(--accent); box-shadow:0 12px 30px var(--shadow); }
+.prod-header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px 18px; flex-wrap:wrap; }
+.prod-left { display:flex; align-items:center; gap:14px; }
+.prod-icon { width:52px; height:52px; border-radius:10px; object-fit:contain; background:rgba(0,0,0,0.02); }
+.prod-title { font-size:16px; font-weight:800; }
+.prod-status { color:var(--muted); font-size:13px; margin-top:2px; }
+.prod-right { display:flex; align-items:center; gap:12px; }
+.prod-price { font-size:18px; font-weight:800; color:var(--accent); }
+.btn-sm { padding:9px 16px; width:auto; }
+
+.prod-body { max-height:0; overflow:hidden; transition:max-height .25s ease, padding .25s ease; }
+.product-card.expanded .prod-body { max-height:560px; padding:0 18px 18px; }
+
+.buy-line { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); font-size:14px; color:var(--muted); }
+.buy-line span:last-child { color:var(--text); font-weight:700; }
+
+.prod-desc-grid { display:grid; grid-template-columns:1.1fr 1fr; gap:14px; }
+@media (max-width:720px){ .prod-desc-grid{ grid-template-columns:1fr; } }
+.prod-desc-img img { height:180px; width:100%; object-fit:cover; border-radius:12px; }
+</style>
+
+<script src="/app.js"></script>
+<script>
+  const OPTIONS = [
+    { days:7, cost:"40 ₽", label:"7 дней" },
+    { days:30, cost:"160 ₽", label:"30 дней" },
+    { days:90, cost:"430 ₽", label:"3 месяца" },
+    { days:180, cost:"770 ₽", label:"6 месяцев" },
+    { days:365, cost:"1390 ₽", label:"12 месяцев" },
+  ];
+
+  const globalDur = document.getElementById("global-dur");
+  function syncDur() {
+    const i = Math.max(0,Math.min(4,Number(globalDur.value)));
+    const o = OPTIONS[i];
+    document.getElementById("p-cs2-price").textContent = o.cost;
+    document.getElementById("p-cs2-period").textContent = o.label;
+    document.getElementById("p-cs2-sum").textContent = o.cost;
+    history.replaceState(null,"","/buy?dur="+i);
+  }
+  globalDur.addEventListener("input", syncDur);
+  const p = new URLSearchParams(location.search);
+  globalDur.value = p.get("dur")||"1";
+  syncDur();
+
+  const card = document.querySelector(".product-card");
+  const buyBtn = document.getElementById("p-cs2-buy");
+  const confirm = document.getElementById("p-cs2-confirm");
+  buyBtn.addEventListener("click", async ()=>{
+    const me = await NS.requireAuth();
+    if (!me) return;
+    document.querySelectorAll(".product-card").forEach(c=>c.classList.remove("expanded"));
+    card.classList.add("expanded");
+  });
+  confirm.addEventListener("click", async ()=>{
+    const i = Math.max(0,Math.min(4,Number(globalDur.value)));
+    confirm.disabled=true; confirm.textContent="Обработка...";
+    const r = await NS.api("/api/site?action=buy",{method:"POST",body:{days:OPTIONS[i].days}});
+    confirm.disabled=false; confirm.textContent="Купить";
+    const res = document.getElementById("p-cs2-res");
+    res.style.display="block";
+    if(r.ok&&r.data&&r.data.ok){
+      res.className="result ok";
+      res.innerHTML="Подписка активирована до "+new Date(r.data.expiresAtIso).toLocaleDateString("ru-RU")+" ("+OPTIONS[i].cost+")<br>UID: <b>"+NS.escape(r.data.uid)+"</b>";
+    } else {
+      res.className="result err";
+      res.textContent = (r.data&&r.data.error==="unauthorized")?"Нужно войти.":"Ошибка покупки.";
+    }
+  });
+
+  (async ()=>{
+    const me = await NS.me();
+    NS.renderNav("buy");
+  })();
+</script>
+</body>
+</html>
