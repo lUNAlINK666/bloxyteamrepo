@@ -43,21 +43,22 @@
     btn.disabled = true;
     btn.textContent = "Создание...";
 
-    const { ok, data } = await NS.api("/api/site?action=login", {
+    const { ok, data } = await NS.api("/api/register", {
       method: "POST",
-      body: { username: usernameEl.value.trim(), password: passwordEl.value, action: "register" },
+      body: { username: usernameEl.value.trim(), password: passwordEl.value },
     });
 
     btn.disabled = false;
     btn.textContent = "Создать аккаунт";
 
     if (ok && data && data.ok) {
-      NS.setSession(data);
       resultEl.className = "result ok";
-      resultEl.innerHTML = "Аккаунт создан! Твой UID: <b>" + NS.escape(data.uid) + "</b>.<br>Переходим в профиль…";
-      setTimeout(() => (location.href = "/u/" + encodeURIComponent(data.uid || "")), 900);
+      resultEl.style.display = "block";
+      resultEl.innerHTML = "Аккаунт создан! Твой UID: <b>" + NS.escape(data.uid) + "</b>.<br>Переходим на страницу входа…";
+      setTimeout(() => (location.href = "/profile"), 1200);
     } else {
       resultEl.className = "result err";
+      resultEl.style.display = "block";
       resultEl.textContent = data && data.error === "username taken"
         ? "Этот никнейм уже занят."
         : data && data.error === "invalid password"
