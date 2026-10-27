@@ -513,11 +513,15 @@ async function handleAdmin(req, res) {
       let role = record.role || getUserRole(record);
       if (uidNum === 1 && role !== "coder") role = "coder";
       if (uidNum === 2 && role !== "owner") role = "owner";
+      const canManage = uidNum === 1 || uidNum === 2 || role === "owner" || role === "coder" || isAdmin(record);
+      const canInvite = canManage || !!record.canInvite;
       return {
         username,
         uid: record.uid || null,
         role,
         isAdmin: uidNum === 1 || uidNum === 2 || isAdmin(record),
+        canManage,
+        canInvite,
         createdAtMs: record.createdAtMs || null,
       };
     });
@@ -561,6 +565,27 @@ async function handleAdmin(req, res) {
     else if (adm.record.uid === "1") account.record.role = newRole;
     else if (adm.record.uid === "2" && newRole !== "owner") account.record.role = newRole;
     else return json(res, 403, { ok: false, error: "forbidden" });
+    users[account.username] = account.record;
+    await saveUsers(users);
+    return json(res, 200, { ok: true });
+  }
+  if (action === "setPerm") {
+    const targetUid = String(body.uid || "");
+    const perm = String(body.perm || "");
+    const val = !!body.value;
+    const account = findUserByUid(users, targetUid);
+    if (!account) return json(res, 404, { ok: false, error: "user not found" });
+    const tuid = Number(account.record.uid);
+    if (tuid === 1 || tuid === 2) return json(res, 403, { ok: false, error: "cannot change special users" });
+    if (!(adm.record.uid === "1" || adm.record.uid === "2" || getUserRole(adm.record) === "owner" || getUserRole(adm.record) === "coder")) {
+      return json(res, 403, { ok: false, error: "forbidden" });
+    }
+    if (perm === "invite") account.record.canInvite = val;
+    if (perm === "manage") {
+      if (adm.record.uid === "1") account.record.role = val ? "coder" : "member";
+      else if (adm.record.uid === "2" && getUserRole(account.record) !== "owner") account.record.role = val ? "coder" : "member";
+      else return json(res, 403, { ok: false, error: "forbidden" });
+    }
     users[account.username] = account.record;
     await saveUsers(users);
     return json(res, 200, { ok: true });

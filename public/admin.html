@@ -8,6 +8,21 @@
 <link rel="icon" id="favicon" type="image/png" href="/favicon.png" />
 <script>(function(){try{var s=localStorage.getItem("hfc_theme")||"system";var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var e=(s==="system")?(d?"dark":"light"):s;document.documentElement.setAttribute("data-theme",e);var l=document.getElementById("favicon");if(l)l.href=(e==="dark")?"/favicon-white.png":"/favicon-black.png";}catch(err){}})();</script>
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<style>
+.toggle { position: relative; display: inline-block; width: 46px; height: 26px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; cursor: pointer; inset: 0; background: var(--surface-hover); border: 1px solid var(--border); transition: .2s; border-radius: 999px; }
+.toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 3px; background: var(--muted); transition: .2s; border-radius: 50%; }
+.toggle input:checked + .toggle-slider { background: var(--accent-soft); border-color: var(--accent); }
+.toggle input:checked + .toggle-slider:before { transform: translateX(18px); background: var(--accent); }
+.user-row { display:flex; align-items:center; gap:10px; }
+.user-row .avatar { width: 32px; height: 32px; font-size: 14px; }
+.tabs { display:flex; gap:8px; margin-top:18px; }
+.tab { padding:8px 14px; border-radius:10px; color:var(--muted); border:1px solid var(--border); background:transparent; cursor:pointer; }
+.tab.active { background:var(--accent-soft); color:var(--accent); border-color:var(--border); }
+.tab-pane { display:none; }
+.tab-pane.active { display:block; }
+</style>
 </head>
 <body>
   <nav class="nav" data-nav></nav>
@@ -16,63 +31,88 @@
     <div class="forum-head" style="margin-top:20px">
       <div>
         <h1 style="font-size:24px">Управление</h1>
-        <div class="sub">Инвайты, роли, настройки</div>
+        <div class="sub">Настройки, инвайты, пользователи</div>
       </div>
     </div>
 
-    <div class="card" style="max-width:100%;margin:18px 0">
-      <h2 style="font-size:18px;margin-bottom:10px">Настройки</h2>
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="requireInvite" /> Требовать инвайт при регистрации</label>
-        <button class="btn btn-primary" id="saveConfig" style="width:auto">Сохранить</button>
-      </div>
-      <div id="configRes" class="result"></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="settings">Настройки</button>
+      <button class="tab" data-tab="invites">Инвайты</button>
+      <button class="tab" data-tab="users">Пользователи</button>
     </div>
 
-    <div class="card" style="max-width:100%;margin:18px 0">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-        <h2 style="font-size:18px">Инвайты</h2>
-        <button class="btn btn-primary" id="createInvite" style="width:auto">Создать инвайт</button>
+    <div class="tab-pane active" id="pane-settings">
+      <div class="card" style="max-width:100%;margin:18px 0">
+        <h2 style="font-size:18px;margin-bottom:10px">Основные настройки</h2>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-weight:600">Требовать инвайт при регистрации</div>
+            <div style="color:var(--muted);font-size:13px">Если включено - регистрация только по инвайту</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="requireInvite" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div id="configRes" class="result"></div>
       </div>
-      <div style="overflow-x:auto;margin-top:12px">
-        <table style="width:100%;border-collapse:collapse;font-size:14px">
-          <thead>
-            <tr style="text-align:left;color:var(--muted)">
-              <th style="padding:10px;border-bottom:1px solid var(--border)">Код</th>
-              <th style="padding:10px;border-bottom:1px solid var(--border)">Создан</th>
-              <th style="padding:10px;border-bottom:1px solid var(--border)">Кем</th>
-              <th style="padding:10px;border-bottom:1px solid var(--border)">Статус</th>
-              <th style="padding:10px;border-bottom:1px solid var(--border)">Использован</th>
-              <th style="padding:10px;border-bottom:1px solid var(--border)"></th>
-            </tr>
-          </thead>
-          <tbody id="invitesBody"></tbody>
-        </table>
-      </div>
-      <div id="inviteRes" class="result"></div>
     </div>
 
-    <div class="card" style="max-width:100%;margin:18px 0">
-      <h2 style="font-size:18px;margin-bottom:10px">Пользователи</h2>
-      <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:14px">
-          <thead>
-            <tr style="text-align:left;color:var(--muted)">
-              <th style="padding:10px;border-bottom:1px solid var(--border)">UID</th>
-              <th style="padding:10px;border-bottom:1px solid var(--border)">Ник</th>
-              <th style="padding:10px;border-bottom:1px solid var(--border)">Роль</th>
-              <th style="padding:10px;border-bottom:1px solid var(--border)">Действия</th>
-            </tr>
-          </thead>
-          <tbody id="usersBody"></tbody>
-        </table>
+    <div class="tab-pane" id="pane-invites">
+      <div class="card" style="max-width:100%;margin:18px 0">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <h2 style="font-size:18px">Инвайты</h2>
+          <button class="btn btn-primary" id="createInvite" style="width:auto">Создать инвайт</button>
+        </div>
+        <div style="overflow-x:auto;margin-top:12px">
+          <table style="width:100%;border-collapse:collapse;font-size:14px">
+            <thead>
+              <tr style="text-align:left;color:var(--muted)">
+                <th style="padding:10px;border-bottom:1px solid var(--border)">Код</th>
+                <th style="padding:10px;border-bottom:1px solid var(--border)">Создан</th>
+                <th style="padding:10px;border-bottom:1px solid var(--border)">Кем</th>
+                <th style="padding:10px;border-bottom:1px solid var(--border)">Статус</th>
+                <th style="padding:10px;border-bottom:1px solid var(--border)">Использован</th>
+                <th style="padding:10px;border-bottom:1px solid var(--border)"></th>
+              </tr>
+            </thead>
+            <tbody id="invitesBody"></tbody>
+          </table>
+        </div>
+        <div id="inviteRes" class="result"></div>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="pane-users">
+      <div class="card" style="max-width:100%;margin:18px 0">
+        <h2 style="font-size:18px;margin-bottom:10px">Пользователи</h2>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:14px">
+            <thead>
+              <tr style="text-align:left;color:var(--muted)">
+                <th style="padding:10px;border-bottom:1px solid var(--border)">Пользователь</th>
+                <th style="padding:10px;border-bottom:1px solid var(--border)">Роль</th>
+                <th style="padding:10px;border-bottom:1px solid var(--border)">Управление сайтом</th>
+                <th style="padding:10px;border-bottom:1px solid var(--border)">Создание инвайтов</th>
+              </tr>
+            </thead>
+            <tbody id="usersBody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
 
 <script src="/app.js"></script>
 <script>
-  NS.renderNav(null);
+  NS.renderNav("admin");
+  document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('pane-' + btn.getAttribute('data-tab')).classList.add('active');
+  }));
+
   async function load() {
     const me = await NS.requireAuth();
     if (!me) return;
@@ -82,7 +122,12 @@
       location.href = "/";
       return;
     }
-    document.getElementById("requireInvite").checked = !!data.config.requireInvite;
+    const reqInv = document.getElementById("requireInvite");
+    reqInv.checked = !!data.config.requireInvite;
+    reqInv.onchange = async () => {
+      await NS.api("/api/site?action=admin", { method: "POST", body: { action: "toggleInvite", requireInvite: reqInv.checked } });
+    };
+
     const ib = document.getElementById("invitesBody");
     ib.innerHTML = (data.invites || []).map(i => '<tr>' +
       '<td style="padding:10px;border-bottom:1px solid var(--border);font-family:monospace">' + NS.escape(i.code) + '</td>' +
@@ -100,26 +145,43 @@
     const ub = document.getElementById("usersBody");
     ub.innerHTML = (data.users || []).map(u => {
       const uidn = Number(u.uid);
-      const canEdit = (me.uid == "1" || me.uid == "2") && uidn != 1 && uidn != 2;
-      const canMakeOwner = me.uid == "1" && uidn != 1 && uidn != 2;
-      const roleSel = canEdit ? '<select data-uid="' + NS.escape(u.uid) + '">' +
-        '<option value="member"' + (u.role==='member'?' selected':'') + '>Member</option>' +
-        '<option value="coder"' + (u.role==='coder'?' selected':'') + '>Coder</option>' +
-        (canMakeOwner ? '<option value="owner"' + (u.role==='owner'?' selected':'') + '>Owner</option>' : '') +
-      '</select>' : u.role;
-      const btn = canEdit ? '<button class="btn btn-ghost" style="width:auto;padding:6px 10px" data-setrole="' + NS.escape(u.uid) + '">Сохранить</button>' : '';
+      const isSpecial = uidn === 1 || uidn === 2;
+      const canEdit = (me.uid == "1" || me.uid == "2") && !isSpecial;
+      const canMakeOwner = me.uid == "1" && !isSpecial;
+      let roleSel = u.role === "owner" ? "Owner" : u.role === "coder" ? "Coder" : "Member";
+      if (canEdit) {
+        roleSel = '<select data-uid="' + NS.escape(u.uid) + '" style="background:var(--surface-input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 8px">' +
+          '<option value="member"' + (u.role==='member'?' selected':'') + '>Member</option>' +
+          '<option value="coder"' + (u.role==='coder'?' selected':'') + '>Coder</option>' +
+          (canMakeOwner ? '<option value="owner"' + (u.role==='owner'?' selected':'') + '>Owner</option>' : '') +
+        '</select>';
+      }
+      const manage = (uidn === 1 || uidn === 2 || u.role === "owner" || u.role === "coder" || u.canManage);
+      const invite = (uidn === 1 || uidn === 2 || manage || u.role === "owner" || u.role === "coder" || u.canInvite);
+      const toggleManage = '<label class="toggle"><input type="checkbox" data-manage="' + NS.escape(u.uid) + '" ' + (manage && isSpecial ? 'checked disabled' : manage ? 'checked' : '') + ' ' + ((canEdit && !isSpecial) ? '' : 'disabled') + ' /><span class="toggle-slider"></span></label>';
+      const toggleInvite = '<label class="toggle"><input type="checkbox" data-inviteperm="' + NS.escape(u.uid) + '" ' + (invite && isSpecial ? 'checked disabled' : invite ? 'checked' : '') + ' ' + ((canEdit && !isSpecial) ? '' : 'disabled') + ' /><span class="toggle-slider"></span></label>';
       return '<tr>' +
-        '<td style="padding:10px;border-bottom:1px solid var(--border)">' + NS.escape(u.uid||'') + '</td>' +
-        '<td style="padding:10px;border-bottom:1px solid var(--border)">' + NS.escape(u.username) + '</td>' +
+        '<td style="padding:10px;border-bottom:1px solid var(--border)"><div class="user-row">' + NS.avatarHTML(u.username, u.uid, "avatar") + '<div><div style="font-weight:600">' + NS.escape(u.username) + '</div><div style="color:var(--muted);font-size:12px">UID ' + NS.escape(u.uid||'') + '</div></div></div></td>' +
         '<td style="padding:10px;border-bottom:1px solid var(--border)">' + roleSel + '</td>' +
-        '<td style="padding:10px;border-bottom:1px solid var(--border)">' + btn + '</td>' +
+        '<td style="padding:10px;border-bottom:1px solid var(--border)">' + toggleManage + '</td>' +
+        '<td style="padding:10px;border-bottom:1px solid var(--border)">' + toggleInvite + '</td>' +
       '</tr>';
     }).join('');
-    ub.querySelectorAll('[data-setrole]').forEach(b => b.addEventListener('click', async () => {
-      const uid = b.getAttribute('data-setrole');
-      const sel = ub.querySelector('select[data-uid="'+uid.replace(/"/g,'\\"')+'"]');
-      const role = sel ? sel.value : 'member';
-      await NS.api("/api/site?action=admin", { method: "POST", body: { action: "setRole", uid, role } });
+    ub.querySelectorAll('select[data-uid]').forEach(sel => sel.addEventListener('change', async () => {
+      const uid = sel.getAttribute('data-uid');
+      await NS.api("/api/site?action=admin", { method: "POST", body: { action: "setRole", uid, role: sel.value } });
+      load();
+    }));
+    ub.querySelectorAll('input[data-manage]').forEach(inp => inp.addEventListener('change', async () => {
+      if (inp.disabled) return;
+      const uid = inp.getAttribute('data-manage');
+      await NS.api("/api/site?action=admin", { method: "POST", body: { action: "setPerm", uid, perm: "manage", value: inp.checked } });
+      load();
+    }));
+    ub.querySelectorAll('input[data-inviteperm]').forEach(inp => inp.addEventListener('change', async () => {
+      if (inp.disabled) return;
+      const uid = inp.getAttribute('data-inviteperm');
+      await NS.api("/api/site?action=admin", { method: "POST", body: { action: "setPerm", uid, perm: "invite", value: inp.checked } });
       load();
     }));
   }
@@ -131,13 +193,6 @@
       r.className = "result ok"; r.style.display="block"; r.textContent = "Создан: " + data.invite.code;
     } else { r.className="result err"; r.style.display="block"; r.textContent="Ошибка"; }
     load();
-  });
-  document.getElementById("saveConfig").addEventListener("click", async () => {
-    const requireInvite = document.getElementById("requireInvite").checked;
-    const { data } = await NS.api("/api/site?action=admin", { method: "POST", body: { action: "toggleInvite", requireInvite } });
-    const r = document.getElementById("configRes");
-    if (data && data.ok) { r.className="result ok"; r.style.display="block"; r.textContent="Сохранено"; }
-    else { r.className="result err"; r.style.display="block"; r.textContent="Ошибка"; }
   });
 
   load();

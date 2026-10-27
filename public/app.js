@@ -236,8 +236,8 @@
 
     // Центр: только приватные разделы (у гостя пусто).
     const links = user
-      ? '<a href="/"' + (active === "home" ? ' class="active"' : "") + ">Чат</a>" +
-        '<a href="/forum"' + (active === "forum" ? ' class="active"' : "") + ">Форум</a>"
+      ? '<a href="/forum"' + (active === "forum" ? ' class="active"' : "") + ">Форум</a>" +
+        ((user.isAdmin || user.role === "coder" || user.role === "owner" || user.canManage || user.canInvite) ? '<a href="/admin"' + (active === "admin" ? ' class="active"' : "") + ">Управление</a>" : "")
       : "";
 
     // Право: ник с выпадающим меню (Профиль/Выйти) или вход для гостя.
@@ -259,7 +259,7 @@
         "</a>" +
         '<div class="nav-dropdown">' +
         '<a href="/profile">Профиль</a>' +
-        (user.isAdmin || user.role === "coder" || user.role === "owner" ? '<a href="/admin">Управление</a>' : '') +
+        ((user.isAdmin || user.role === "coder" || user.role === "owner" || user.canManage || user.canInvite) ? '<a href="/admin">Управление</a>' : '') +
         '<a href="javascript:void(0)" data-settings>Настройки</a>' +
         '<a href="javascript:void(0)" data-logout>Выйти</a>' +
         "</div>" +
