@@ -20,7 +20,7 @@ server/
 
 ## Хранилище
 
-- **Vercel KV** — если заданы `KV_REST_API_URL` и `KV_REST_API_TOKEN`. При подключении KV в дашборде Vercel переменные прокидываются автоматически.
+- **Upstash Redis (HFC)** — если заданы `HFC_REDIS_REDIS_URL` / `HFC_REDIS_KV_URL`. Также поддерживаются `HFC_REDIS_KV_REST_API_*`. При подключении KV в дашборде Vercel переменные прокидываются автоматически.
 - **Локальный файл** `server/data/db.json` — если KV не задан (для теста).
 
 ## Локальный запуск
