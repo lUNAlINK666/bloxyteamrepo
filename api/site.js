@@ -251,8 +251,8 @@ async function handleMe(req, res) {
   const expiresAtMs = record.expiresAtMs || 0;
   const uidNum = Number(record.uid);
   let role = record.role || getUserRole(record);
-  if (uidNum === 1 && role !== "coder") role = "coder";
-  if (uidNum === 2 && role !== "owner") role = "owner";
+  if (uidNum === 1) role = "coder";
+  if (uidNum === 2) role = "owner";
   if ((uidNum === 1 || uidNum === 2) && record.role !== role) {
     record.role = role;
     users[account.username] = record;
@@ -264,6 +264,8 @@ async function handleMe(req, res) {
     username: account.username,
     uid: record.uid || null,
     role,
+    canManage: record.canManage === true || uidNum === 1 || uidNum === 2 || role === "owner" || role === "coder" || isAdmin(record),
+    canInvite: record.canInvite === true || record.canManage === true || uidNum === 1 || uidNum === 2 || role === "owner" || role === "coder" || isAdmin(record),
     isAdmin: uidNum === 1 || uidNum === 2 || isAdmin(record),
     active: daysLeft(expiresAtMs) > 0,
     expiresAtMs: expiresAtMs || null,
@@ -563,6 +565,7 @@ async function handleAdmin(req, res) {
       code,
       createdAt: Date.now(),
       createdBy: adm.account.username,
+      createdByUid: adm.record.uid,
       used: false,
     };
     invites.push(invite);
@@ -605,13 +608,6 @@ async function handleAdmin(req, res) {
     }
     if (perm === "manage") {
       account.record.canManage = val;
-      if (val) {
-        const r = getUserRole(account.record);
-        if (r !== "owner" && r !== "coder") {
-          if (adm.record.uid === "1") account.record.role = "coder";
-          else if (adm.record.uid === "2" && r !== "owner") account.record.role = "coder";
-        }
-      }
     }
     users[account.username] = account.record;
     await saveUsers(users);

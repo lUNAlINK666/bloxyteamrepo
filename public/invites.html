@@ -57,9 +57,9 @@
     ib.innerHTML = (data.invites || []).map(i => '<tr>' +
       '<td style="padding:10px;border-bottom:1px solid var(--border);font-family:monospace">' + NS.escape(i.code) + '</td>' +
       '<td style="padding:10px;border-bottom:1px solid var(--border)">' + NS.fmtDate(i.createdAt) + '</td>' +
-      '<td style="padding:10px;border-bottom:1px solid var(--border)">' + NS.escape(i.createdBy || '') + '</td>' +
+      '<td style="padding:10px;border-bottom:1px solid var(--border)">' + (i.createdBy ? '<a class="ulink" href="/u/' + encodeURIComponent(i.createdByUid || '') + '">' + NS.escape(i.createdBy) + '</a>' : '-') + '</td>' +
       '<td style="padding:10px;border-bottom:1px solid var(--border)">' + (i.used ? 'Использован' : 'Свободен') + '</td>' +
-      '<td style="padding:10px;border-bottom:1px solid var(--border)">' + (i.usedBy ? NS.escape(i.usedBy) + (i.usedByUid? ' (UID '+NS.escape(i.usedByUid)+')':'') : '-') + '</td>' +
+      '<td style="padding:10px;border-bottom:1px solid var(--border)">' + (i.usedBy ? '<a class="ulink" href="/u/' + encodeURIComponent(i.usedByUid || '') + '">' + NS.escape(i.usedBy) + '</a>' + (i.usedByUid? ' (UID '+NS.escape(i.usedByUid)+')':'') : '-') + '</td>' +
       '<td style="padding:10px;border-bottom:1px solid var(--border)">' + (i.used ? '' : '<button class="btn btn-ghost" style="width:auto;padding:6px 10px" data-revoke="' + NS.escape(i.code) + '">Отозвать</button>') + '</td>' +
     '</tr>').join('');
     ib.querySelectorAll('[data-revoke]').forEach(b => b.addEventListener('click', async () => {
