@@ -31,6 +31,12 @@ const {
   saveDoc,
   daysLeft,
   json,
+  getUserRole,
+  isAdmin,
+  loadInvites,
+  saveInvites,
+  loadConfig,
+  saveConfig,
 } = require("../lib/store");
 const {
   parseBody,
@@ -138,6 +144,7 @@ async function handleLogin(req, res) {
   const username = normalizeUsername(body.username);
   const password = String(body.password || "");
   const action = body.action === "register" ? "register" : "login";
+  const inviteCode = String(body.invite || body.inviteCode || "").trim();
 
   if (!username) return json(res, 400, { ok: false, error: "invalid username" });
   if (password.length < 4 || password.length > 64) {
@@ -145,6 +152,7 @@ async function handleLogin(req, res) {
   }
 
   const users = await loadUsers();
+  const config = await loadConfig();
   let existing = users[username];
 
   if (action === "login") {
@@ -152,13 +160,48 @@ async function handleLogin(req, res) {
       return json(res, 401, { ok: false, error: "bad credentials" });
     }
   } else if (!existing) {
+    if (config.requireInvite) {
+      if (!inviteCode) {
+        return json(res, 403, { ok: false, error: "invite required" });
+      }
+      const invites = await loadInvites();
+      const invite = invites.find((i) => i && i.code === inviteCode && !i.used);
+      if (!invite) {
+        return json(res, 403, { ok: false, error: "invalid invite" });
+      }
+      // mark invite used
+      invite.used = true;
+      invite.usedBy = username;
+      invite.usedByUid = null; // will set after uid
+      invite.usedAt = Date.now();
+      await saveInvites(invites);
+    }
+
     const uid = await nextUid(users);
+    // mark invite usedByUid
+    if (config.requireInvite && inviteCode) {
+      try {
+        const invites = await loadInvites();
+        const invite = invites.find((i) => i && i.code === inviteCode);
+        if (invite) {
+          invite.usedByUid = uid;
+          await saveInvites(invites);
+        }
+      } catch (e) {}
+    }
+
+    let role = "member";
+    const uidNum = Number(uid);
+    if (uidNum === 1) role = "coder";
+    if (uidNum === 2) role = "owner";
+
     existing = {
       uid,
       username: body.username,
       passwordHash: hashPassword(password),
       expiresAtMs: 0,
       createdAtMs: Date.now(),
+      role,
     };
     users[username] = existing;
     await saveUsers(users);
@@ -175,6 +218,7 @@ async function handleLogin(req, res) {
     token,
     username,
     uid: existing.uid,
+    role: getUserRole(existing),
     expiresAtMs: existing.expiresAtMs || null,
     expiresAtIso: existing.expiresAtMs ? new Date(existing.expiresAtMs).toISOString() : null,
     active: !!existing.expiresAtMs && existing.expiresAtMs > Date.now(),
@@ -205,11 +249,22 @@ async function handleMe(req, res) {
 
   const record = account.record;
   const expiresAtMs = record.expiresAtMs || 0;
+  const uidNum = Number(record.uid);
+  let role = record.role || getUserRole(record);
+  if (uidNum === 1 && role !== "coder") role = "coder";
+  if (uidNum === 2 && role !== "owner") role = "owner";
+  if ((uidNum === 1 || uidNum === 2) && record.role !== role) {
+    record.role = role;
+    users[account.username] = record;
+    try { await saveUsers(users); } catch (e) {}
+  }
   return json(res, 200, {
     ok: true,
     authenticated: true,
     username: account.username,
     uid: record.uid || null,
+    role,
+    isAdmin: uidNum === 1 || uidNum === 2 || isAdmin(record),
     active: daysLeft(expiresAtMs) > 0,
     expiresAtMs: expiresAtMs || null,
     expiresAtIso: expiresAtMs ? new Date(expiresAtMs).toISOString() : null,
@@ -263,11 +318,17 @@ async function handleProfile(req, res) {
   const record = account.record;
   const expiresAtMs = record.expiresAtMs || 0;
   const forum = await loadDoc("forum", { threads: [], seq: 0 });
+  const uidNum = Number(record.uid);
+  let role = record.role || getUserRole(record);
+  if (uidNum === 1 && role !== "coder") role = "coder";
+  if (uidNum === 2 && role !== "owner") role = "owner";
 
   return json(res, 200, {
     ok: true,
     username: account.username,
     uid: record.uid || null,
+    role,
+    isAdmin: uidNum === 1 || uidNum === 2 || isAdmin(record),
     active: daysLeft(expiresAtMs) > 0,
     expiresAtMs: expiresAtMs || null,
     expiresAtIso: expiresAtMs ? new Date(expiresAtMs).toISOString() : null,
@@ -413,50 +474,163 @@ async function handleThread(req, res) {
 }
 
 // ---------------------------------------------------------------------------
-// Покупка/продление подписки по сессии (без повторного ввода пароля).
-// Логику продления повторяет /api/free, но авторизует по session-токену,
-// а не по паролю. Сам /api/free НЕ трогаем (его использует лоадер).
+// Админка / инвайты / чат
 // ---------------------------------------------------------------------------
 
-async function handleBuy(req, res) {
-  if (req.method !== "POST") {
-    return json(res, 405, { ok: false, error: "method not allowed" });
-  }
-
-  const body = await parseBody(req);
+async function requireAdmin(req, body) {
   const session = getSession(req, body);
-  if (!session) return json(res, 401, { ok: false, error: "unauthorized" });
-
+  if (!session) return { ok: false, error: "unauthorized" };
   const author = await authorFromSession(session);
-  if (!author) return json(res, 401, { ok: false, error: "unauthorized" });
-
+  if (!author) return { ok: false, error: "unauthorized" };
   const users = await loadUsers();
   const account =
     (author.uid ? findUserByUid(users, author.uid) : null) ||
     (users[author.username] ? { username: author.username, record: users[author.username] } : null);
-  if (!account) return json(res, 404, { ok: false, error: "user not found" });
-
-  let days = Number(body.days);
-  if (!Number.isFinite(days) || days < 1 || days > 3650) days = 30;
-
-  const now = Date.now();
-  let startMs = now;
-  if (account.record.expiresAtMs && account.record.expiresAtMs > now) {
-    startMs = account.record.expiresAtMs;
+  if (!account) return { ok: false, error: "unauthorized" };
+  const record = account.record;
+  const uidNum = Number(record.uid);
+  if (!(uidNum === 1 || uidNum === 2 || isAdmin(record))) {
+    return { ok: false, error: "forbidden" };
   }
-  const expiresAtMs = startMs + days * 86400000;
-  account.record.expiresAtMs = expiresAtMs;
-  users[account.username] = account.record;
-  await saveUsers(users);
+  return { ok: true, account, record, session, author };
+}
 
-  return json(res, 200, {
-    ok: true,
-    username: account.username,
-    uid: account.record.uid,
-    days,
-    expiresAtMs,
-    expiresAtIso: new Date(expiresAtMs).toISOString(),
-  });
+async function handleAdmin(req, res) {
+  if (req.method !== "GET" && req.method !== "POST") {
+    return json(res, 405, { ok: false, error: "method not allowed" });
+  }
+  const body = req.method === "POST" ? await parseBody(req) : null;
+  const adm = await requireAdmin(req, body);
+  if (!adm.ok) return json(res, adm.error === "forbidden" ? 403 : 401, { ok: false, error: adm.error });
+
+  const users = await loadUsers();
+  const invites = await loadInvites();
+  const config = await loadConfig();
+
+  if (req.method === "GET") {
+    const list = Object.entries(users).map(([username, record]) => {
+      const uidNum = Number(record.uid);
+      let role = record.role || getUserRole(record);
+      if (uidNum === 1 && role !== "coder") role = "coder";
+      if (uidNum === 2 && role !== "owner") role = "owner";
+      return {
+        username,
+        uid: record.uid || null,
+        role,
+        isAdmin: uidNum === 1 || uidNum === 2 || isAdmin(record),
+        createdAtMs: record.createdAtMs || null,
+      };
+    });
+    list.sort((a, b) => Number(a.uid || 0) - Number(b.uid || 0));
+    return json(res, 200, {
+      ok: true,
+      config,
+      invites: invites.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
+      users: list,
+      me: { username: adm.account.username, uid: adm.record.uid, role: adm.record.role },
+    });
+  }
+
+  // POST
+  const action = String(body.action || "");
+  if (action === "createInvite") {
+    const code = Math.random().toString(36).slice(2, 10).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
+    const invite = {
+      code,
+      createdAt: Date.now(),
+      createdBy: adm.account.username,
+      used: false,
+    };
+    invites.push(invite);
+    await saveInvites(invites);
+    return json(res, 200, { ok: true, invite });
+  }
+  if (action === "toggleInvite") {
+    config.requireInvite = !!body.requireInvite;
+    await saveConfig(config);
+    return json(res, 200, { ok: true, config });
+  }
+  if (action === "setRole") {
+    const targetUid = String(body.uid || "");
+    const newRole = String(body.role || "member");
+    const account = findUserByUid(users, targetUid);
+    if (!account) return json(res, 404, { ok: false, error: "user not found" });
+    const tuid = Number(account.record.uid);
+    if (tuid === 1 || tuid === 2) return json(res, 403, { ok: false, error: "cannot change special users" });
+    if (adm.record.uid === "1" && newRole === "owner") account.record.role = "owner";
+    else if (adm.record.uid === "1") account.record.role = newRole;
+    else if (adm.record.uid === "2" && newRole !== "owner") account.record.role = newRole;
+    else return json(res, 403, { ok: false, error: "forbidden" });
+    users[account.username] = account.record;
+    await saveUsers(users);
+    return json(res, 200, { ok: true });
+  }
+  if (action === "revokeInvite") {
+    const code = String(body.code || "");
+    const idx = invites.findIndex((i) => i && i.code === code);
+    if (idx >= 0) {
+      invites.splice(idx, 1);
+      await saveInvites(invites);
+    }
+    return json(res, 200, { ok: true });
+  }
+
+  return json(res, 400, { ok: false, error: "unknown action" });
+}
+
+const GENERAL_CHAT_KEY = "vls:general_chat";
+
+async function handleChat(req, res) {
+  if (req.method === "GET") {
+    const chat = await loadDoc(GENERAL_CHAT_KEY, { messages: [], seq: 0 });
+    if (!Array.isArray(chat.messages)) chat.messages = [];
+    // return last 50
+    const messages = chat.messages.slice(-50);
+    return json(res, 200, { ok: true, messages });
+  }
+  if (req.method === "POST") {
+    const body = await parseBody(req);
+    const session = getSession(req, body);
+    if (!session) return json(res, 401, { ok: false, error: "unauthorized" });
+    const author = await authorFromSession(session);
+    if (!author) return json(res, 401, { ok: false, error: "unauthorized" });
+    const text = String(body.text || body.body || "").trim();
+    if (text.length < 1 || text.length > 2000) {
+      return json(res, 400, { ok: false, error: "invalid text" });
+    }
+    const users = await loadUsers();
+    const account =
+      (author.uid ? findUserByUid(users, author.uid) : null) ||
+      (users[author.username] ? { username: author.username, record: users[author.username] } : null);
+    const record = account ? account.record : {};
+    const uidNum = Number(record.uid || author.uid);
+    let role = record.role || getUserRole(record);
+    if (uidNum === 1 && role !== "coder") role = "coder";
+    if (uidNum === 2 && role !== "owner") role = "owner";
+    const chat = await loadDoc(GENERAL_CHAT_KEY, { messages: [], seq: 0 });
+    if (!Array.isArray(chat.messages)) chat.messages = [];
+    if (typeof chat.seq !== "number") chat.seq = chat.messages.length;
+    const id = chat.seq + 1;
+    chat.seq = id;
+    chat.messages.push({
+      id,
+      author: author.username,
+      authorUid: author.uid,
+      role,
+      text,
+      createdAt: Date.now(),
+    });
+    if (chat.messages.length > 500) {
+      chat.messages = chat.messages.slice(chat.messages.length - 500);
+    }
+    await saveDoc(GENERAL_CHAT_KEY, chat);
+    return json(res, 200, { ok: true });
+  }
+  return json(res, 405, { ok: false, error: "method not allowed" });
+}
+
+async function handleBuy(req, res) {
+  return json(res, 410, { ok: false, error: "disabled" });
 }
 
 // ---------------------------------------------------------------------------
@@ -478,6 +652,10 @@ module.exports = async function (req, res) {
       return handleBuy(req, res);
     case "avatar":
       return handleAvatar(req, res);
+    case "admin":
+      return handleAdmin(req, res);
+    case "chat":
+      return handleChat(req, res);
     default:
       return json(res, 404, { ok: false, error: "unknown action" });
   }

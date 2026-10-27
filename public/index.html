@@ -3,95 +3,136 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>NEOSENSE — главная</title>
+<title>HyperFox Chat — главная</title>
 <link rel="stylesheet" href="/style.css" />
 <link rel="icon" id="favicon" type="image/png" href="/favicon.png" />
-<script>(function(){try{var s=localStorage.getItem("neosense_theme")||"system";var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var e=(s==="system")?(d?"dark":"light"):s;document.documentElement.setAttribute("data-theme",e);var l=document.getElementById("favicon");if(l)l.href=(e==="dark")?"/favicon-white.png":"/favicon-black.png";}catch(err){}})();</script>
+<script>(function(){try{var s=localStorage.getItem("hfc_theme")||"system";var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var e=(s==="system")?(d?"dark":"light"):s;document.documentElement.setAttribute("data-theme",e);var l=document.getElementById("favicon");if(l)l.href=(e==="dark")?"/favicon-white.png":"/favicon-black.png";}catch(err){}})();</script>
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 </head>
 <body>
   <nav class="nav" data-nav></nav>
 
   <div class="hero">
-    <h1>NEOSENSE</h1>
-    <p id="hero-text">Приватный софт для CS2. Регистрируйся, получай свой UID и активируй подписку.</p>
+    <h1>HyperFox Chat</h1>
+    <p id="hero-text">Командный чат участников команды. Доступ только по инвайту.</p>
     <div class="hero-actions" id="hero-actions"></div>
   </div>
 
   <div class="container-narrow">
-    <div class="features">
-      <div class="feature">
-        <div class="icon">🎯</div>
-        <h3>Приватные конфиги</h3>
-        <p>Закрытые наборы настроек, которых нет в публичном доступе.</p>
-      </div>
-      <div class="feature">
-        <div class="icon">⚡</div>
-        <h3>Обновления раньше всех</h3>
-        <p>Подписчики получают новые версии и фиксы первыми.</p>
-      </div>
-      <div class="feature">
-        <div class="icon">🛡️</div>
-        <h3>Приоритетная поддержка</h3>
-        <p>Быстрые ответы и помощь с настройкой лично.</p>
-      </div>
-    </div>
-
-    <div class="forum-head" style="margin-top:44px">
+    <div class="forum-head" style="margin-top:24px">
       <div>
-        <h1 style="font-size:22px">Последнее на форуме</h1>
-        <div class="sub">Обсуждения, гайды и поддержка сообщества</div>
+        <h1 style="font-size:22px">Общий чат</h1>
+        <div class="sub">Только для авторизованных участников</div>
       </div>
-      <a href="/forum" class="btn btn-ghost">Все темы</a>
     </div>
-    <div class="threads" id="latest">
-      <div class="empty">Загрузка…</div>
+    <div class="chat-box">
+      <div class="chat-messages" id="chat-messages">
+        <div class="empty">Загрузка…</div>
+      </div>
+      <div class="chat-form" id="chat-form" style="display:none">
+        <input id="chat-input" type="text" placeholder="Написать сообщение..." maxlength="2000" />
+        <button class="btn btn-primary" id="chat-send" style="width:auto">Отправить</button>
+      </div>
+      <div class="note" id="chat-login" style="display:none">Войди, чтобы писать в чате.</div>
     </div>
   </div>
+
+<style>
+.chat-box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.chat-messages { max-height: 420px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.chat-msg { display: flex; gap: 10px; align-items: flex-start; }
+.chat-msg .post-avatar { width: 34px; height: 34px; }
+.chat-body { flex: 1; min-width: 0; }
+.chat-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+.chat-author { font-weight: 700; }
+.chat-role { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--border); }
+.chat-time { color: var(--muted-2); font-size: 11px; margin-left: auto; }
+.chat-text { font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; color: var(--body-2); }
+.chat-form { display: flex; gap: 10px; padding: 12px; border-top: 1px solid var(--border); }
+.chat-form input { margin-bottom: 0; flex: 1; }
+</style>
 
 <script src="/app.js"></script>
 <script>
   NS.renderNav("home");
   (async () => {
-    const box = document.getElementById("latest");
     const actions = document.getElementById("hero-actions");
     const heroText = document.getElementById("hero-text");
     const me = await NS.me();
     NS.renderNav("home");
 
     if (me) {
-      heroText.textContent = "Ты в аккаунте, " + me.username + ". Управляй подпиской или загляни на форум.";
+      heroText.textContent = "Ты в аккаунте, " + me.username + ". Привет в HyperFox Chat.";
       actions.innerHTML =
-        '<a href="/buy" class="btn btn-primary">Купить подписку</a>' +
-        '<a href="/forum" class="btn btn-ghost">Форум</a>' +
-        '<a href="/u/' + encodeURIComponent(me.uid || "") + '" class="btn btn-ghost">Профиль</a>';
+        '<a href="/forum" class="btn btn-primary">Форум</a>' +
+        '<a href="/u/' + encodeURIComponent(me.uid || "") + '" class="btn btn-ghost">Профиль</a>' +
+        ((me.isAdmin || me.role === "coder" || me.role === "owner") ? '<a href="/admin" class="btn btn-ghost">Управление</a>' : '');
     } else {
-      heroText.textContent = "Приватный софт для CS2. Регистрируйся, получай свой UID и активируй подписку.";
+      heroText.textContent = "Командный чат участников команды. Доступ только по инвайту.";
       actions.innerHTML =
-        '<a href="/register" class="btn btn-primary">Регистрация</a>' +
+        '<a href="/register" class="btn btn-primary">Регистрация по инвайту</a>' +
         '<a href="/profile" class="btn btn-ghost">Войти</a>';
     }
 
-    if (!me) {
-      box.innerHTML =
-        '<div class="empty">Форум доступен только аккаунтам.<br><a class="ulink" href="/profile">Войди</a> или <a class="ulink" href="/register">зарегистрируйся</a>.</div>';
-      return;
+    const messagesEl = document.getElementById("chat-messages");
+    const form = document.getElementById("chat-form");
+    const loginNote = document.getElementById("chat-login");
+    const input = document.getElementById("chat-input");
+    const send = document.getElementById("chat-send");
+
+    async function loadChat() {
+      const { data } = await NS.api("/api/site?action=chat", { method: "GET" });
+      const msgs = (data && data.messages) || [];
+      if (!msgs.length) {
+        messagesEl.innerHTML = '<div class="empty">Пока нет сообщений. Начни общение первым!</div>';
+        return;
+      }
+      messagesEl.innerHTML = msgs.map((m) => {
+        const role = m.role || "member";
+        const roleText = role === "owner" ? "Owner" : role === "coder" ? "Coder" : "Member";
+        return '<div class="chat-msg">' +
+          NS.avatarHTML(m.author, m.authorUid, "post-avatar") +
+          '<div class="chat-body">' +
+            '<div class="chat-head">' +
+              NS.profileLink(m.author, m.authorUid) +
+              '<span class="chat-role">' + NS.escape(roleText) + '</span>' +
+              '<span class="chat-time">' + NS.fmtAgo(m.createdAt) + '</span>' +
+            '</div>' +
+            '<div class="chat-text">' + NS.escape(m.text) + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join("");
+      messagesEl.scrollTop = messagesEl.scrollHeight;
     }
-    const { data } = await NS.api("/api/site?action=forum", { method: "GET" });
-    const threads = (data && data.threads) || [];
-    if (!threads.length) {
-      box.innerHTML = '<div class="empty">Пока нет тем. Стань первым — <a class="ulink" href="/forum">создай тему</a>.</div>';
-      return;
+
+    if (me) {
+      form.style.display = "flex";
+      loginNote.style.display = "none";
+    } else {
+      form.style.display = "none";
+      loginNote.style.display = "block";
     }
-    box.innerHTML = threads.slice(0, 5).map((t) =>
-      '<a class="thread-row" href="/thread/' + t.id + '">' +
-        '<div class="tr-main">' +
-          '<div class="tr-title">' + NS.escape(t.title) + '</div>' +
-          '<div class="tr-meta">' + NS.escape(t.author) + ' · ' + NS.fmtAgo(t.lastAt) + '</div>' +
-        '</div>' +
-        '<div class="tr-replies"><b>' + t.replies + '</b>ответов</div>' +
-      '</a>'
-    ).join("");
+
+    await loadChat();
+    setInterval(loadChat, 4000);
+
+    send.addEventListener("click", async () => {
+      const text = input.value;
+      if (!text.trim()) return;
+      send.disabled = true;
+      const { ok } = await NS.api("/api/site?action=chat", { method: "POST", body: { text } });
+      send.disabled = false;
+      if (ok) {
+        input.value = "";
+        await loadChat();
+      }
+    });
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        send.click();
+      }
+    });
   })();
 </script>
 </body>

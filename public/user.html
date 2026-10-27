@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>NEOSENSE — Профиль</title>
+<title>HyperFox Chat — Профиль</title>
 <link rel="stylesheet" href="/style.css" />
 <link rel="icon" id="favicon" type="image/png" href="/favicon.png" />
-<script>(function(){try{var s=localStorage.getItem("neosense_theme")||"system";var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var e=(s==="system")?(d?"dark":"light"):s;document.documentElement.setAttribute("data-theme",e);var l=document.getElementById("favicon");if(l)l.href=(e==="dark")?"/favicon-white.png":"/favicon-black.png";}catch(err){}})();</script>
+<script>(function(){try{var s=localStorage.getItem("hfc_theme")||"system";var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var e=(s==="system")?(d?"dark":"light"):s;document.documentElement.setAttribute("data-theme",e);var l=document.getElementById("favicon");if(l)l.href=(e==="dark")?"/favicon-white.png":"/favicon-black.png";}catch(err){}})();</script>
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 </head>
 <body>
@@ -24,10 +24,7 @@
         <div class="who">
           <h2 id="u-name">—</h2>
           <div class="uid">UID <span id="u-uid">—</span></div>
-          <div class="prem-badge" id="prem-badge" style="display:none;margin-top:8px">
-            <span class="prem-pill" id="prem-pill">Member</span>
-            <span class="prem-exp" id="prem-exp" style="display:none;margin-left:8px;color:var(--muted);font-size:12px">до —</span>
-          </div>
+          <div style="margin-top:6px"><span id="u-role" style="font-size:12px;padding:4px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--border)">Member</span></div>
         </div>
       </div>
 
@@ -96,32 +93,15 @@
       return;
     }
 
-    document.title = "NEOSENSE — " + data.username;
+    document.title = "HyperFox Chat — " + data.username;
     document.getElementById("avatar-letter").textContent = (data.username || "?").charAt(0).toUpperCase();
     setAvatarImg(data.uid);
     document.getElementById("u-name").textContent = data.username || "—";
     document.getElementById("u-uid").textContent = data.uid || "—";
 
-    const expiresAtMs = data.expiresAtMs || 0;
-    const active = data.active || (expiresAtMs > Date.now());
-
-    const pill = document.getElementById("prem-pill");
-    const pbox = document.getElementById("prem-badge");
-    const expEl = document.getElementById("prem-exp");
-    if (active) {
-      pill.textContent = "Premium";
-      pill.className = "prem-pill premium";
-      if (expiresAtMs) {
-        expEl.textContent = "до " + NS.fmtDate(expiresAtMs);
-        expEl.style.display = "inline";
-      }
-      pbox.style.display = "flex";
-    } else {
-      pill.textContent = "Member";
-      pill.className = "prem-pill member";
-      expEl.style.display = "none";
-      pbox.style.display = "flex";
-    }
+    const role = data.role || "member";
+    const roleEl = document.getElementById("u-role");
+    roleEl.textContent = role === "owner" ? "Owner" : role === "coder" ? "Coder" : "Member";
 
     document.getElementById("u-created").textContent = NS.fmtDate(data.createdAtMs);
     const f = data.forum || { threads: 0, posts: 0, lastActivityMs: null };

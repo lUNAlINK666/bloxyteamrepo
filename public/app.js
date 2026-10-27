@@ -1,10 +1,10 @@
-/* NEOSENSE — общий клиентский скрипт: сессия, шапка, хелперы. */
+/* HyperFox Chat — общий клиентский скрипт: сессия, шапка, хелперы. */
 (function () {
   "use strict";
 
-  const TOKEN_KEY = "neosense_token";
-  const USER_KEY = "neosense_user";
-  const THEME_KEY = "neosense_theme";
+  const TOKEN_KEY = "hfc_token";
+  const USER_KEY = "hfc_user";
+  const THEME_KEY = "hfc_theme";
 
   // ---- Тема оформления: system | dark | light ---------------------------------
   function systemTheme() {
@@ -236,13 +236,11 @@
 
     // Центр: только приватные разделы (у гостя пусто).
     const links = user
-      ? '<a href="/forum"' + (active === "forum" ? ' class="active"' : "") + ">Форум</a>" +
-        '<a href="/buy"' + (active === "buy" ? ' class="active"' : "") + ">Купить</a>"
+      ? '<a href="/"' + (active === "home" ? ' class="active"' : "") + ">Чат</a>" +
+        '<a href="/forum"' + (active === "forum" ? ' class="active"' : "") + ">Форум</a>"
       : "";
 
     // Право: ник с выпадающим меню (Профиль/Выйти) или вход для гостя.
-    // Клик по нику ведёт в профиль, меню открывается при наведении.
-    // Ник подчёркивается, когда открыт свой профиль (через /profile или свой /u/<uid>).
     const uidMatch = location.pathname.match(/^\/u\/([^/]+)/);
     const isOwnUid = !!(user && uidMatch && decodeURIComponent(uidMatch[1]) === String(user.uid));
     const profileActive = !!(user && (active === "profile" || isOwnUid));
@@ -261,6 +259,7 @@
         "</a>" +
         '<div class="nav-dropdown">' +
         '<a href="/profile">Профиль</a>' +
+        (user.isAdmin || user.role === "coder" || user.role === "owner" ? '<a href="/admin">Управление</a>' : '') +
         '<a href="javascript:void(0)" data-settings>Настройки</a>' +
         '<a href="javascript:void(0)" data-logout>Выйти</a>' +
         "</div>" +
@@ -278,7 +277,7 @@
       '" />' +
       '<a class="logo' +
       (active === "home" ? " active" : "") +
-      '" href="/">NEOSENSE</a>' +
+      '" href="/">HyperFox Chat</a>' +
       "</div>" +
       '<div class="nav-links">' +
       links +

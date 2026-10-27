@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HyperFox Chat — Управление</title>
+<link rel="stylesheet" href="/style.css" />
+<link rel="icon" id="favicon" type="image/png" href="/favicon.png" />
+<script>(function(){try{var s=localStorage.getItem("hfc_theme")||"system";var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var e=(s==="system")?(d?"dark":"light"):s;document.documentElement.setAttribute("data-theme",e);var l=document.getElementById("favicon");if(l)l.href=(e==="dark")?"/favicon-white.png":"/favicon-black.png";}catch(err){}})();</script>
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+</head>
+<body>
+  <nav class="nav" data-nav></nav>
+
+  <div class="container-narrow">
+    <div class="forum-head" style="margin-top:20px">
+      <div>
+        <h1 style="font-size:24px">Управление</h1>
+        <div class="sub">Инвайты, роли, настройки</div>
+      </div>
+    </div>
+
+    <div class="card" style="max-width:100%;margin:18px 0">
+      <h2 style="font-size:18px;margin-bottom:10px">Настройки</h2>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="requireInvite" /> Требовать инвайт при регистрации</label>
+        <button class="btn btn-primary" id="saveConfig" style="width:auto">Сохранить</button>
+      </div>
+      <div id="configRes" class="result"></div>
+    </div>
+
+    <div class="card" style="max-width:100%;margin:18px 0">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <h2 style="font-size:18px">Инвайты</h2>
+        <button class="btn btn-primary" id="createInvite" style="width:auto">Создать инвайт</button>
+      </div>
+      <div style="overflow-x:auto;margin-top:12px">
+        <table style="width:100%;border-collapse:collapse;font-size:14px">
+          <thead>
+            <tr style="text-align:left;color:var(--muted)">
+              <th style="padding:10px;border-bottom:1px solid var(--border)">Код</th>
+              <th style="padding:10px;border-bottom:1px solid var(--border)">Создан</th>
+              <th style="padding:10px;border-bottom:1px solid var(--border)">Кем</th>
+              <th style="padding:10px;border-bottom:1px solid var(--border)">Статус</th>
+              <th style="padding:10px;border-bottom:1px solid var(--border)">Использован</th>
+              <th style="padding:10px;border-bottom:1px solid var(--border)"></th>
+            </tr>
+          </thead>
+          <tbody id="invitesBody"></tbody>
+        </table>
+      </div>
+      <div id="inviteRes" class="result"></div>
+    </div>
+
+    <div class="card" style="max-width:100%;margin:18px 0">
+      <h2 style="font-size:18px;margin-bottom:10px">Пользователи</h2>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:14px">
+          <thead>
+            <tr style="text-align:left;color:var(--muted)">
+              <th style="padding:10px;border-bottom:1px solid var(--border)">UID</th>
+              <th style="padding:10px;border-bottom:1px solid var(--border)">Ник</th>
+              <th style="padding:10px;border-bottom:1px solid var(--border)">Роль</th>
+              <th style="padding:10px;border-bottom:1px solid var(--border)">Действия</th>
+            </tr>
+          </thead>
+          <tbody id="usersBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<script src="/app.js"></script>
+<script>
+  NS.renderNav(null);
+  async function load() {
+    const me = await NS.requireAuth();
+    if (!me) return;
+    const { data } = await NS.api("/api/site?action=admin", { method: "GET" });
+    if (!data || !data.ok) {
+      alert("Нет доступа");
+      location.href = "/";
+      return;
+    }
+    document.getElementById("requireInvite").checked = !!data.config.requireInvite;
+    const ib = document.getElementById("invitesBody");
+    ib.innerHTML = (data.invites || []).map(i => '<tr>' +
+      '<td style="padding:10px;border-bottom:1px solid var(--border);font-family:monospace">' + NS.escape(i.code) + '</td>' +
+      '<td style="padding:10px;border-bottom:1px solid var(--border)">' + NS.fmtDate(i.createdAt) + '</td>' +
+      '<td style="padding:10px;border-bottom:1px solid var(--border)">' + NS.escape(i.createdBy || '') + '</td>' +
+      '<td style="padding:10px;border-bottom:1px solid var(--border)">' + (i.used ? 'Использован' : 'Свободен') + '</td>' +
+      '<td style="padding:10px;border-bottom:1px solid var(--border)">' + (i.usedBy ? NS.escape(i.usedBy) + (i.usedByUid? ' (UID '+NS.escape(i.usedByUid)+')':'') : '-') + '</td>' +
+      '<td style="padding:10px;border-bottom:1px solid var(--border)">' + (i.used ? '' : '<button class="btn btn-ghost" style="width:auto;padding:6px 10px" data-revoke="' + NS.escape(i.code) + '">Отозвать</button>') + '</td>' +
+    '</tr>').join('');
+    ib.querySelectorAll('[data-revoke]').forEach(b => b.addEventListener('click', async () => {
+      await NS.api("/api/site?action=admin", { method: "POST", body: { action: "revokeInvite", code: b.getAttribute('data-revoke') } });
+      load();
+    }));
+
+    const ub = document.getElementById("usersBody");
+    ub.innerHTML = (data.users || []).map(u => {
+      const uidn = Number(u.uid);
+      const canEdit = (me.uid == "1" || me.uid == "2") && uidn != 1 && uidn != 2;
+      const canMakeOwner = me.uid == "1" && uidn != 1 && uidn != 2;
+      const roleSel = canEdit ? '<select data-uid="' + NS.escape(u.uid) + '">' +
+        '<option value="member"' + (u.role==='member'?' selected':'') + '>Member</option>' +
+        '<option value="coder"' + (u.role==='coder'?' selected':'') + '>Coder</option>' +
+        (canMakeOwner ? '<option value="owner"' + (u.role==='owner'?' selected':'') + '>Owner</option>' : '') +
+      '</select>' : u.role;
+      const btn = canEdit ? '<button class="btn btn-ghost" style="width:auto;padding:6px 10px" data-setrole="' + NS.escape(u.uid) + '">Сохранить</button>' : '';
+      return '<tr>' +
+        '<td style="padding:10px;border-bottom:1px solid var(--border)">' + NS.escape(u.uid||'') + '</td>' +
+        '<td style="padding:10px;border-bottom:1px solid var(--border)">' + NS.escape(u.username) + '</td>' +
+        '<td style="padding:10px;border-bottom:1px solid var(--border)">' + roleSel + '</td>' +
+        '<td style="padding:10px;border-bottom:1px solid var(--border)">' + btn + '</td>' +
+      '</tr>';
+    }).join('');
+    ub.querySelectorAll('[data-setrole]').forEach(b => b.addEventListener('click', async () => {
+      const uid = b.getAttribute('data-setrole');
+      const sel = ub.querySelector('select[data-uid="'+uid.replace(/"/g,'\\"')+'"]');
+      const role = sel ? sel.value : 'member';
+      await NS.api("/api/site?action=admin", { method: "POST", body: { action: "setRole", uid, role } });
+      load();
+    }));
+  }
+
+  document.getElementById("createInvite").addEventListener("click", async () => {
+    const { data } = await NS.api("/api/site?action=admin", { method: "POST", body: { action: "createInvite" } });
+    const r = document.getElementById("inviteRes");
+    if (data && data.ok) {
+      r.className = "result ok"; r.style.display="block"; r.textContent = "Создан: " + data.invite.code;
+    } else { r.className="result err"; r.style.display="block"; r.textContent="Ошибка"; }
+    load();
+  });
+  document.getElementById("saveConfig").addEventListener("click", async () => {
+    const requireInvite = document.getElementById("requireInvite").checked;
+    const { data } = await NS.api("/api/site?action=admin", { method: "POST", body: { action: "toggleInvite", requireInvite } });
+    const r = document.getElementById("configRes");
+    if (data && data.ok) { r.className="result ok"; r.style.display="block"; r.textContent="Сохранено"; }
+    else { r.className="result err"; r.style.display="block"; r.textContent="Ошибка"; }
+  });
+
+  load();
+</script>
+</body>
+</html>

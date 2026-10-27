@@ -1,11 +1,11 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/buy", "destination": "/buy.html" },
     { "source": "/profile", "destination": "/profile.html" },
     { "source": "/register", "destination": "/register.html" },
     { "source": "/forum", "destination": "/forum.html" },
     { "source": "/thread/:id", "destination": "/thread.html" },
-    { "source": "/u/:uid", "destination": "/user.html" }
+    { "source": "/u/:uid", "destination": "/user.html" },
+    { "source": "/admin", "destination": "/admin.html" }
   ]
 }

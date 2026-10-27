@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>NEOSENSE — Регистрация</title>
+<title>HyperFox Chat — Регистрация</title>
 <link rel="stylesheet" href="/style.css" />
 <link rel="icon" id="favicon" type="image/png" href="/favicon.png" />
-<script>(function(){try{var s=localStorage.getItem("neosense_theme")||"system";var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var e=(s==="system")?(d?"dark":"light"):s;document.documentElement.setAttribute("data-theme",e);var l=document.getElementById("favicon");if(l)l.href=(e==="dark")?"/favicon-white.png":"/favicon-black.png";}catch(err){}})();</script>
+<script>(function(){try{var s=localStorage.getItem("hfc_theme")||"system";var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;var e=(s==="system")?(d?"dark":"light"):s;document.documentElement.setAttribute("data-theme",e);var l=document.getElementById("favicon");if(l)l.href=(e==="dark")?"/favicon-white.png":"/favicon-black.png";}catch(err){}})();</script>
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 </head>
 <body>
@@ -14,9 +14,10 @@
 
   <div class="card">
     <h2>Регистрация</h2>
-    <div class="sub">Создай аккаунт — UID присвоится автоматически по порядку</div>
+    <div class="sub">Только по инвайту. Создай аккаунт для доступа к команде</div>
 
     <form id="reg-form">
+      <input id="invite" type="text" placeholder="Инвайт-код" autocomplete="off" />
       <input id="username" type="text" placeholder="Никнейм (3–32 символа)" maxlength="32" autocomplete="username" />
       <input id="password" type="password" placeholder="Пароль (от 4 символов)" minlength="4" maxlength="64" autocomplete="new-password" />
       <button type="submit" class="btn btn-primary">Создать аккаунт</button>
@@ -24,7 +25,7 @@
 
     <div id="result" class="result"></div>
 
-    <div class="note">Уже есть аккаунт? <a href="/profile" style="color:#6fa8ff">Войти</a></div>
+    <div class="note">Уже есть аккаунт? <a href="/profile" style="color:#c084fc">Войти</a></div>
   </div>
 
 <script src="/app.js"></script>
@@ -34,6 +35,7 @@
   const resultEl = document.getElementById("result");
   const usernameEl = document.getElementById("username");
   const passwordEl = document.getElementById("password");
+  const inviteEl = document.getElementById("invite");
   const btn = form.querySelector("button");
 
   form.addEventListener("submit", async (ev) => {
@@ -48,6 +50,7 @@
       body: {
         username: usernameEl.value.trim(),
         password: passwordEl.value,
+        invite: inviteEl.value.trim(),
         action: "register"
       },
     });
@@ -59,8 +62,8 @@
       NS.setSession(data);
       resultEl.className = "result ok";
       resultEl.style.display = "block";
-      resultEl.innerHTML = "Аккаунт создан! Твой UID: <b>" + NS.escape(data.uid) + "</b>.<br>Переходим в профиль…";
-      setTimeout(() => (location.href = "/profile"), 1200);
+      resultEl.innerHTML = "Аккаунт создан! Твой UID: <b>" + NS.escape(data.uid) + "</b>.<br>Роль: <b>" + NS.escape(data.role || "member") + "</b>.<br>Переходим…";
+      setTimeout(() => (location.href = "/"), 1200);
     } else {
       resultEl.className = "result err";
       resultEl.style.display = "block";
@@ -70,7 +73,11 @@
           ? "Пароль слишком короткий (минимум 4 символа)."
           : data && data.error === "invalid username"
             ? "Никнейм: 3–32 символа (буквы, цифры, _ . -)."
-            : "Не удалось создать аккаунт.";
+            : data && data.error === "invite required"
+              ? "Нужен инвайт-код."
+              : data && data.error === "invalid invite"
+                ? "Неверный или использованный инвайт-код."
+                : "Не удалось создать аккаунт.";
     }
   });
 </script>
