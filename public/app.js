@@ -235,9 +235,10 @@
     const user = NS.savedUser();
 
     // Центр: только приватные разделы (у гостя пусто).
+    const showAdmin = user && (String(user.uid) === "1" || String(user.uid) === "2" || user.isAdmin || user.role === "coder" || user.role === "owner" || user.canManage || user.canInvite);
     const links = user
       ? '<a href="/forum"' + (active === "forum" ? ' class="active"' : "") + ">Форум</a>" +
-        ((user.isAdmin || user.role === "coder" || user.role === "owner" || user.canManage || user.canInvite) ? '<a href="/admin"' + (active === "admin" ? ' class="active"' : "") + ">Управление</a>" : "")
+        (showAdmin ? '<a href="/admin"' + (active === "admin" ? ' class="active"' : "") + ">Управление</a>" : "")
       : "";
 
     // Право: ник с выпадающим меню (Профиль/Выйти) или вход для гостя.
@@ -259,7 +260,7 @@
         "</a>" +
         '<div class="nav-dropdown">' +
         '<a href="/profile">Профиль</a>' +
-        ((user.isAdmin || user.role === "coder" || user.role === "owner" || user.canManage || user.canInvite) ? '<a href="/admin">Управление</a>' : '') +
+        ((String(user.uid) === "1" || String(user.uid) === "2" || user.isAdmin || user.role === "coder" || user.role === "owner" || user.canManage || user.canInvite) ? '<a href="/admin">Управление</a>' : '') +
         '<a href="javascript:void(0)" data-settings>Настройки</a>' +
         '<a href="javascript:void(0)" data-logout>Выйти</a>' +
         "</div>" +

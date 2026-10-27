@@ -489,7 +489,8 @@ async function requireAdmin(req, body) {
   if (!account) return { ok: false, error: "unauthorized" };
   const record = account.record;
   const uidNum = Number(record.uid);
-  if (!(uidNum === 1 || uidNum === 2 || isAdmin(record))) {
+  const role = record.role || getUserRole(record);
+  if (!(uidNum === 1 || uidNum === 2 || role === "owner" || role === "coder" || record.canManage || record.canInvite || isAdmin(record))) {
     return { ok: false, error: "forbidden" };
   }
   return { ok: true, account, record, session, author };
@@ -511,9 +512,9 @@ async function handleAdmin(req, res) {
     const list = Object.entries(users).map(([username, record]) => {
       const uidNum = Number(record.uid);
       let role = record.role || getUserRole(record);
-      if (uidNum === 1 && role !== "coder") role = "coder";
-      if (uidNum === 2 && role !== "owner") role = "owner";
-      const canManage = uidNum === 1 || uidNum === 2 || role === "owner" || role === "coder" || isAdmin(record);
+      if (uidNum === 1) role = "coder";
+      if (uidNum === 2) role = "owner";
+      const canManage = uidNum === 1 || uidNum === 2 || role === "owner" || role === "coder" || !!record.canManage || isAdmin(record);
       const canInvite = canManage || !!record.canInvite;
       return {
         username,
