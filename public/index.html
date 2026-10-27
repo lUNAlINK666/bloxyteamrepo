@@ -107,13 +107,13 @@
     if (me) {
       form.style.display = "flex";
       loginNote.style.display = "none";
+      await loadChat();
+      setInterval(loadChat, 4000);
     } else {
       form.style.display = "none";
       loginNote.style.display = "block";
+      messagesEl.innerHTML = '<div class="empty">Чат доступен только авторизованным участникам.<br><a class="ulink" href="/profile">Войди</a> или <a class="ulink" href="/register">зарегистрируйся по инвайту</a>.</div>';
     }
-
-    await loadChat();
-    setInterval(loadChat, 4000);
 
     send.addEventListener("click", async () => {
       const text = input.value;

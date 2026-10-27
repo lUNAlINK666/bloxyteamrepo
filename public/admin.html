@@ -87,6 +87,7 @@
       const isSpecial = uidn === 1 || uidn === 2;
       const canEdit = (me.uid == "1" || me.uid == "2") && !isSpecial;
       const canMakeOwner = me.uid == "1" && !isSpecial;
+      const canDelete = (me.uid == "1" || me.uid == "2" || me.role === "owner" || me.role === "coder") && !isSpecial;
       let roleSel = u.role === "owner" ? "Owner" : u.role === "coder" ? "Coder" : "Member";
       if (canEdit) {
         roleSel = '<select data-uid="' + NS.escape(u.uid) + '" style="background:var(--surface-input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 8px">' +
@@ -99,11 +100,13 @@
       const invite = (uidn === 1 || uidn === 2 || manage || u.role === "owner" || u.role === "coder" || u.canInvite);
       const toggleManage = '<label class="toggle"><input type="checkbox" data-manage="' + NS.escape(u.uid) + '" ' + (manage && isSpecial ? 'checked disabled' : manage ? 'checked' : '') + ' ' + ((canEdit && !isSpecial) ? '' : 'disabled') + ' /><span class="toggle-slider"></span></label>';
       const toggleInvite = '<label class="toggle"><input type="checkbox" data-inviteperm="' + NS.escape(u.uid) + '" ' + (invite && isSpecial ? 'checked disabled' : invite ? 'checked' : '') + ' ' + ((canEdit && !isSpecial) ? '' : 'disabled') + ' /><span class="toggle-slider"></span></label>';
+      const del = canDelete ? '<button class="btn btn-ghost" style="width:auto;padding:6px 10px;color:#f87171" data-del="' + NS.escape(u.uid) + '">Удалить</button>' : '';
       return '<tr>' +
         '<td style="padding:10px;border-bottom:1px solid var(--border)"><div class="user-row">' + NS.avatarHTML(u.username, u.uid, "avatar") + '<div><div style="font-weight:600">' + NS.escape(u.username) + '</div><div style="color:var(--muted);font-size:12px">UID ' + NS.escape(u.uid||'') + '</div></div></div></td>' +
         '<td style="padding:10px;border-bottom:1px solid var(--border)">' + roleSel + '</td>' +
         '<td style="padding:10px;border-bottom:1px solid var(--border)">' + toggleManage + '</td>' +
         '<td style="padding:10px;border-bottom:1px solid var(--border)">' + toggleInvite + '</td>' +
+        '<td style="padding:10px;border-bottom:1px solid var(--border)">' + del + '</td>' +
       '</tr>';
     }).join('');
     ub.querySelectorAll('select[data-uid]').forEach(sel => sel.addEventListener('change', async () => {
@@ -121,6 +124,12 @@
       if (inp.disabled) return;
       const uid = inp.getAttribute('data-inviteperm');
       await NS.api("/api/site?action=admin", { method: "POST", body: { action: "setPerm", uid, perm: "invite", value: inp.checked } });
+      load();
+    }));
+    ub.querySelectorAll('[data-del]').forEach(btn => btn.addEventListener('click', async () => {
+      const uid = btn.getAttribute('data-del');
+      if (!confirm("Удалить пользователя с UID " + uid + "? Это действие необратимо.")) return;
+      await NS.api("/api/site?action=admin", { method: "POST", body: { action: "deleteUser", uid } });
       load();
     }));
   }

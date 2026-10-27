@@ -619,6 +619,20 @@ async function handleAdmin(req, res) {
     }
     return json(res, 200, { ok: true });
   }
+  if (action === "deleteUser") {
+    const targetUid = String(body.uid || "");
+    const account = findUserByUid(users, targetUid);
+    if (!account) return json(res, 404, { ok: false, error: "user not found" });
+    const tuid = Number(account.record.uid);
+    if (tuid === 1 || tuid === 2) return json(res, 403, { ok: false, error: "cannot delete special users" });
+    if (adm.record.uid !== "1" && adm.record.uid !== "2" && getUserRole(adm.record) !== "owner" && getUserRole(adm.record) !== "coder") {
+      return json(res, 403, { ok: false, error: "forbidden" });
+    }
+    delete users[account.username];
+    await saveUsers(users);
+    try { await saveDoc("avatar_" + targetUid, null); } catch (e) {}
+    return json(res, 200, { ok: true });
+  }
 
   return json(res, 400, { ok: false, error: "unknown action" });
 }

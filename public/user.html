@@ -73,6 +73,10 @@
 
   (async () => {
     const me = await NS.me();
+    if (!me) {
+      location.replace("/register");
+      return;
+    }
     NS.renderNav(null);
 
     const loading = document.getElementById("loading");
