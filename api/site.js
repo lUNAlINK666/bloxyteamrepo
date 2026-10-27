@@ -600,11 +600,18 @@ async function handleAdmin(req, res) {
     if (!(adm.record.uid === "1" || adm.record.uid === "2" || getUserRole(adm.record) === "owner" || getUserRole(adm.record) === "coder")) {
       return json(res, 403, { ok: false, error: "forbidden" });
     }
-    if (perm === "invite") account.record.canInvite = val;
+    if (perm === "invite") {
+      account.record.canInvite = val;
+    }
     if (perm === "manage") {
-      if (adm.record.uid === "1") account.record.role = val ? "coder" : "member";
-      else if (adm.record.uid === "2" && getUserRole(account.record) !== "owner") account.record.role = val ? "coder" : "member";
-      else return json(res, 403, { ok: false, error: "forbidden" });
+      account.record.canManage = val;
+      if (val) {
+        const r = getUserRole(account.record);
+        if (r !== "owner" && r !== "coder") {
+          if (adm.record.uid === "1") account.record.role = "coder";
+          else if (adm.record.uid === "2" && r !== "owner") account.record.role = "coder";
+        }
+      }
     }
     users[account.username] = account.record;
     await saveUsers(users);
