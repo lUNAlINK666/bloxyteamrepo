@@ -54,14 +54,18 @@
       return;
     }
     const ib = document.getElementById("invitesBody");
-    ib.innerHTML = (data.invites || []).map(i => '<tr>' +
-      '<td style="padding:10px;border-bottom:1px solid var(--border);font-family:monospace">' + NS.escape(i.code) + '</td>' +
-      '<td style="padding:10px;border-bottom:1px solid var(--border)">' + NS.fmtDate(i.createdAt) + '</td>' +
-      '<td style="padding:10px;border-bottom:1px solid var(--border)">' + (i.createdBy ? '<a class="ulink" href="/u/' + encodeURIComponent(i.createdByUid || '') + '">' + NS.escape(i.createdBy) + '</a>' : '-') + '</td>' +
-      '<td style="padding:10px;border-bottom:1px solid var(--border)">' + (i.used ? 'Использован' : 'Свободен') + '</td>' +
-      '<td style="padding:10px;border-bottom:1px solid var(--border)">' + (i.usedBy ? '<a class="ulink" href="/u/' + encodeURIComponent(i.usedByUid || '') + '">' + NS.escape(i.usedBy) + '</a>' + (i.usedByUid? ' (UID '+NS.escape(i.usedByUid)+')':'') : '-') + '</td>' +
-      '<td style="padding:10px;border-bottom:1px solid var(--border)">' + (i.used ? '' : '<button class="btn btn-ghost" style="width:auto;padding:6px 10px" data-revoke="' + NS.escape(i.code) + '">Отозвать</button>') + '</td>' +
-    '</tr>').join('');
+    ib.innerHTML = (data.invites || []).map(i => {
+      const cb = i.createdBy ? (i.createdByUid ? '<a class="ulink" href="/u/' + encodeURIComponent(i.createdByUid) + '">' + NS.escape(i.createdBy) + '</a>' : NS.escape(i.createdBy)) : '-';
+      const ub = i.usedBy ? (i.usedByUid ? '<a class="ulink" href="/u/' + encodeURIComponent(i.usedByUid) + '">' + NS.escape(i.usedBy) + '</a>' + ' (UID ' + NS.escape(i.usedByUid) + ')' : NS.escape(i.usedBy)) : '-';
+      return '<tr>' +
+        '<td style="padding:10px;border-bottom:1px solid var(--border);font-family:monospace">' + NS.escape(i.code) + '</td>' +
+        '<td style="padding:10px;border-bottom:1px solid var(--border)">' + NS.fmtDate(i.createdAt) + '</td>' +
+        '<td style="padding:10px;border-bottom:1px solid var(--border)">' + cb + '</td>' +
+        '<td style="padding:10px;border-bottom:1px solid var(--border)">' + (i.used ? 'Использован' : 'Свободен') + '</td>' +
+        '<td style="padding:10px;border-bottom:1px solid var(--border)">' + ub + '</td>' +
+        '<td style="padding:10px;border-bottom:1px solid var(--border)">' + (i.used ? '' : '<button class="btn btn-ghost" style="width:auto;padding:6px 10px" data-revoke="' + NS.escape(i.code) + '">Отозвать</button>') + '</td>' +
+      '</tr>';
+    }).join('');
     ib.querySelectorAll('[data-revoke]').forEach(b => b.addEventListener('click', async () => {
       await NS.api("/api/site?action=admin", { method: "POST", body: { action: "revokeInvite", code: b.getAttribute('data-revoke') } });
       load();
