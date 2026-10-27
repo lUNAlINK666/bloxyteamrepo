@@ -65,4 +65,4 @@ Invoke-RestMethod -Uri "http://localhost:3000/api/status?username=test"
 | POST | `/api/register` | да | `{ username, days }` → создаёт/продлевает |
 | GET | `/api/users` | да | список всех юзеров |
 
-Токен передаётся в заголовке `x-admin-token: <ADMIN_TOKEN>` или `Authorization: Bearer <ADMIN_TOKEN>`.
+Токен передаётся в заголовке `x-admin-token: <ADMIN_TOKEN>` или `Authorization: Bearer <ADMIN_TOKEN>`.# Fixed registration - Tue Oct 27 12:31:08 RTZ 2026
