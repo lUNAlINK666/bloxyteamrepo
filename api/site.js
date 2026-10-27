@@ -258,15 +258,16 @@ async function handleMe(req, res) {
     users[account.username] = record;
     try { await saveUsers(users); } catch (e) {}
   }
+  const isSpecial = uidNum === 1 || uidNum === 2;
   return json(res, 200, {
     ok: true,
     authenticated: true,
     username: account.username,
     uid: record.uid || null,
     role,
-    canManage: record.canManage === true || uidNum === 1 || uidNum === 2 || role === "owner" || role === "coder" || isAdmin(record),
-    canInvite: record.canInvite === true || record.canManage === true || uidNum === 1 || uidNum === 2 || role === "owner" || role === "coder" || isAdmin(record),
-    isAdmin: uidNum === 1 || uidNum === 2 || isAdmin(record),
+    canManage: isSpecial ? true : record.canManage === true,
+    canInvite: isSpecial ? true : record.canInvite === true,
+    isAdmin: isSpecial || isAdmin(record),
     active: daysLeft(expiresAtMs) > 0,
     expiresAtMs: expiresAtMs || null,
     expiresAtIso: expiresAtMs ? new Date(expiresAtMs).toISOString() : null,

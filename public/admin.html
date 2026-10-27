@@ -96,8 +96,8 @@
           (canMakeOwner ? '<option value="owner"' + (u.role==='owner'?' selected':'') + '>Owner</option>' : '') +
         '</select>';
       }
-      const manage = (uidn === 1 || uidn === 2 || u.role === "owner" || u.role === "coder" || u.canManage === true);
-      const invite = (uidn === 1 || uidn === 2 || u.role === "owner" || u.role === "coder" || u.canInvite === true);
+      const manage = (uidn === 1 || uidn === 2 || u.canManage === true);
+      const invite = (uidn === 1 || uidn === 2 || u.canInvite === true);
       const toggleManage = '<label class="toggle"><input type="checkbox" data-manage="' + NS.escape(u.uid) + '" ' + (manage ? 'checked' : '') + ' ' + ((canEdit && !isSpecial) ? '' : 'disabled') + ' /><span class="toggle-slider"></span></label>';
       const toggleInvite = '<label class="toggle"><input type="checkbox" data-inviteperm="' + NS.escape(u.uid) + '" ' + (invite ? 'checked' : '') + ' ' + ((canEdit && !isSpecial) ? '' : 'disabled') + ' /><span class="toggle-slider"></span></label>';
       const del = canDelete ? '<button class="btn btn-ghost" style="width:auto;padding:6px 10px;color:#f87171" data-del="' + NS.escape(u.uid) + '">Удалить</button>' : '';

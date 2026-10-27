@@ -236,8 +236,9 @@
 
     // Центр: только приватные разделы (у гостя пусто).
     const uidStr = String(user && user.uid || "");
-    const canInvite = user && (uidStr === "1" || uidStr === "2" || user.role === "owner" || user.role === "coder" || user.canInvite === true);
-    const canManage = user && (uidStr === "1" || uidStr === "2" || user.role === "owner" || user.role === "coder" || user.canManage === true || user.isAdmin === true);
+    const isSpecial = uidStr === "1" || uidStr === "2";
+    const canInvite = user && (isSpecial || user.canInvite === true);
+    const canManage = user && (isSpecial || user.canManage === true);
     const links = user
       ? '<a href="/forum"' + (active === "forum" ? ' class="active"' : "") + ">Форум</a>" +
         (canInvite ? '<a href="/invites"' + (active === "invites" ? ' class="active"' : "") + ">Инвайты</a>" : "") +
@@ -263,8 +264,8 @@
         "</a>" +
         '<div class="nav-dropdown">' +
         '<a href="/profile">Профиль</a>' +
-        ((String(user.uid) === "1" || String(user.uid) === "2" || user.role === "owner" || user.role === "coder" || user.canInvite === true) ? '<a href="/invites">Инвайты</a>' : '') +
-        ((String(user.uid) === "1" || String(user.uid) === "2" || user.role === "owner" || user.role === "coder" || user.canManage === true || user.isAdmin === true) ? '<a href="/admin">Управление</a>' : '') +
+        ((String(user.uid) === "1" || String(user.uid) === "2" || user.canInvite === true) ? '<a href="/invites">Инвайты</a>' : '') +
+        ((String(user.uid) === "1" || String(user.uid) === "2" || user.canManage === true) ? '<a href="/admin">Управление</a>' : '') +
         '<a href="javascript:void(0)" data-settings>Настройки</a>' +
         '<a href="javascript:void(0)" data-logout>Выйти</a>' +
         "</div>" +
