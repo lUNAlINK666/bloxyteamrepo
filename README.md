@@ -67,3 +67,4 @@ Invoke-RestMethod -Uri "http://localhost:3000/api/status?username=test"
 
 Токен передаётся в заголовке `x-admin-token: <ADMIN_TOKEN>` или `Authorization: Bearer <ADMIN_TOKEN>`.# Fixed registration - Tue Oct 27 12:31:08 RTZ 2026
 # Updated 1793087084
+# Deploy 1793087533
