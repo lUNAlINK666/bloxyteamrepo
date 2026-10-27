@@ -43,18 +43,23 @@
     btn.disabled = true;
     btn.textContent = "Создание...";
 
-    const { ok, data } = await NS.api("/api/register", {
+    const { ok, data } = await NS.api("/api/site?action=login", {
       method: "POST",
-      body: { username: usernameEl.value.trim(), password: passwordEl.value },
+      body: {
+        username: usernameEl.value.trim(),
+        password: passwordEl.value,
+        action: "register"
+      },
     });
 
     btn.disabled = false;
     btn.textContent = "Создать аккаунт";
 
     if (ok && data && data.ok) {
+      NS.setSession(data);
       resultEl.className = "result ok";
       resultEl.style.display = "block";
-      resultEl.innerHTML = "Аккаунт создан! Твой UID: <b>" + NS.escape(data.uid) + "</b>.<br>Переходим на страницу входа…";
+      resultEl.innerHTML = "Аккаунт создан! Твой UID: <b>" + NS.escape(data.uid) + "</b>.<br>Переходим в профиль…";
       setTimeout(() => (location.href = "/profile"), 1200);
     } else {
       resultEl.className = "result err";
