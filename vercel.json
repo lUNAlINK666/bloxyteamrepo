@@ -6,6 +6,7 @@
     { "source": "/forum", "destination": "/forum.html" },
     { "source": "/thread/:id", "destination": "/thread.html" },
     { "source": "/u/:uid", "destination": "/user.html" },
-    { "source": "/admin", "destination": "/admin.html" }
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/invites", "destination": "/invites.html" }
   ]
 }

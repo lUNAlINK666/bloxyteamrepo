@@ -235,10 +235,13 @@
     const user = NS.savedUser();
 
     // Центр: только приватные разделы (у гостя пусто).
-    const showAdmin = user && (String(user.uid) === "1" || String(user.uid) === "2" || user.isAdmin || user.role === "coder" || user.role === "owner" || user.canManage || user.canInvite);
+    const uidStr = String(user && user.uid || "");
+    const canInvite = user && (uidStr === "1" || uidStr === "2" || user.role === "owner" || user.role === "coder" || !!user.canInvite);
+    const canManage = user && (uidStr === "1" || uidStr === "2" || user.role === "owner" || user.role === "coder" || !!user.canManage || !!user.isAdmin);
     const links = user
       ? '<a href="/forum"' + (active === "forum" ? ' class="active"' : "") + ">Форум</a>" +
-        (showAdmin ? '<a href="/admin"' + (active === "admin" ? ' class="active"' : "") + ">Управление</a>" : "")
+        (canInvite ? '<a href="/invites"' + (active === "invites" ? ' class="active"' : "") + ">Инвайты</a>" : "") +
+        (canManage ? '<a href="/admin"' + (active === "admin" ? ' class="active"' : "") + ">Управление</a>" : "")
       : "";
 
     // Право: ник с выпадающим меню (Профиль/Выйти) или вход для гостя.
@@ -260,7 +263,8 @@
         "</a>" +
         '<div class="nav-dropdown">' +
         '<a href="/profile">Профиль</a>' +
-        ((String(user.uid) === "1" || String(user.uid) === "2" || user.isAdmin || user.role === "coder" || user.role === "owner" || user.canManage || user.canInvite) ? '<a href="/admin">Управление</a>' : '') +
+        ((String(user.uid) === "1" || String(user.uid) === "2" || user.role === "owner" || user.role === "coder" || !!user.canInvite) ? '<a href="/invites">Инвайты</a>' : '') +
+        ((String(user.uid) === "1" || String(user.uid) === "2" || user.role === "owner" || user.role === "coder" || !!user.canManage || !!user.isAdmin) ? '<a href="/admin">Управление</a>' : '') +
         '<a href="javascript:void(0)" data-settings>Настройки</a>' +
         '<a href="javascript:void(0)" data-logout>Выйти</a>' +
         "</div>" +

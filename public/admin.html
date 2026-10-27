@@ -17,11 +17,6 @@
 .toggle input:checked + .toggle-slider:before { transform: translateX(18px); background: var(--accent); }
 .user-row { display:flex; align-items:center; gap:10px; }
 .user-row .avatar { width: 32px; height: 32px; font-size: 14px; }
-.tabs { display:flex; gap:8px; margin-top:18px; }
-.tab { padding:8px 14px; border-radius:10px; color:var(--muted); border:1px solid var(--border); background:transparent; cursor:pointer; }
-.tab.active { background:var(--accent-soft); color:var(--accent); border-color:var(--border); }
-.tab-pane { display:none; }
-.tab-pane.active { display:block; }
 </style>
 </head>
 <body>
@@ -31,74 +26,39 @@
     <div class="forum-head" style="margin-top:20px">
       <div>
         <h1 style="font-size:24px">Управление</h1>
-        <div class="sub">Настройки, инвайты, пользователи</div>
+        <div class="sub">Настройки и пользователи</div>
       </div>
     </div>
 
-    <div class="tabs">
-      <button class="tab active" data-tab="settings">Настройки</button>
-      <button class="tab" data-tab="invites">Инвайты</button>
-      <button class="tab" data-tab="users">Пользователи</button>
-    </div>
-
-    <div class="tab-pane active" id="pane-settings">
-      <div class="card" style="max-width:100%;margin:18px 0">
-        <h2 style="font-size:18px;margin-bottom:10px">Основные настройки</h2>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--border)">
-          <div>
-            <div style="font-weight:600">Требовать инвайт при регистрации</div>
-            <div style="color:var(--muted);font-size:13px">Если включено - регистрация только по инвайту</div>
-          </div>
-          <label class="toggle">
-            <input type="checkbox" id="requireInvite" />
-            <span class="toggle-slider"></span>
-          </label>
+    <div class="card" style="max-width:100%;margin:18px 0">
+      <h2 style="font-size:18px;margin-bottom:10px">Основные настройки</h2>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0">
+        <div>
+          <div style="font-weight:600">Требовать инвайт при регистрации</div>
+          <div style="color:var(--muted);font-size:13px">Если включено - регистрация только по инвайту</div>
         </div>
-        <div id="configRes" class="result"></div>
+        <label class="toggle">
+          <input type="checkbox" id="requireInvite" />
+          <span class="toggle-slider"></span>
+        </label>
       </div>
+      <div id="configRes" class="result"></div>
     </div>
 
-    <div class="tab-pane" id="pane-invites">
-      <div class="card" style="max-width:100%;margin:18px 0">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <h2 style="font-size:18px">Инвайты</h2>
-          <button class="btn btn-primary" id="createInvite" style="width:auto">Создать инвайт</button>
-        </div>
-        <div style="overflow-x:auto;margin-top:12px">
-          <table style="width:100%;border-collapse:collapse;font-size:14px">
-            <thead>
-              <tr style="text-align:left;color:var(--muted)">
-                <th style="padding:10px;border-bottom:1px solid var(--border)">Код</th>
-                <th style="padding:10px;border-bottom:1px solid var(--border)">Создан</th>
-                <th style="padding:10px;border-bottom:1px solid var(--border)">Кем</th>
-                <th style="padding:10px;border-bottom:1px solid var(--border)">Статус</th>
-                <th style="padding:10px;border-bottom:1px solid var(--border)">Использован</th>
-                <th style="padding:10px;border-bottom:1px solid var(--border)"></th>
-              </tr>
-            </thead>
-            <tbody id="invitesBody"></tbody>
-          </table>
-        </div>
-        <div id="inviteRes" class="result"></div>
-      </div>
-    </div>
-
-    <div class="tab-pane" id="pane-users">
-      <div class="card" style="max-width:100%;margin:18px 0">
-        <h2 style="font-size:18px;margin-bottom:10px">Пользователи</h2>
-        <div style="overflow-x:auto">
-          <table style="width:100%;border-collapse:collapse;font-size:14px">
-            <thead>
-              <tr style="text-align:left;color:var(--muted)">
-                <th style="padding:10px;border-bottom:1px solid var(--border)">Пользователь</th>
-                <th style="padding:10px;border-bottom:1px solid var(--border)">Роль</th>
-                <th style="padding:10px;border-bottom:1px solid var(--border)">Управление сайтом</th>
-                <th style="padding:10px;border-bottom:1px solid var(--border)">Создание инвайтов</th>
-              </tr>
-            </thead>
-            <tbody id="usersBody"></tbody>
-          </table>
-        </div>
+    <div class="card" style="max-width:100%;margin:18px 0">
+      <h2 style="font-size:18px;margin-bottom:10px">Пользователи</h2>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:14px">
+          <thead>
+            <tr style="text-align:left;color:var(--muted)">
+              <th style="padding:10px;border-bottom:1px solid var(--border)">Пользователь</th>
+              <th style="padding:10px;border-bottom:1px solid var(--border)">Роль</th>
+              <th style="padding:10px;border-bottom:1px solid var(--border)">Управление сайтом</th>
+              <th style="padding:10px;border-bottom:1px solid var(--border)">Создание инвайтов</th>
+            </tr>
+          </thead>
+          <tbody id="usersBody"></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -106,13 +66,6 @@
 <script src="/app.js"></script>
 <script>
   NS.renderNav("admin");
-  document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('pane-' + btn.getAttribute('data-tab')).classList.add('active');
-  }));
-
   async function load() {
     const me = await NS.requireAuth();
     if (!me) return;
@@ -127,20 +80,6 @@
     reqInv.onchange = async () => {
       await NS.api("/api/site?action=admin", { method: "POST", body: { action: "toggleInvite", requireInvite: reqInv.checked } });
     };
-
-    const ib = document.getElementById("invitesBody");
-    ib.innerHTML = (data.invites || []).map(i => '<tr>' +
-      '<td style="padding:10px;border-bottom:1px solid var(--border);font-family:monospace">' + NS.escape(i.code) + '</td>' +
-      '<td style="padding:10px;border-bottom:1px solid var(--border)">' + NS.fmtDate(i.createdAt) + '</td>' +
-      '<td style="padding:10px;border-bottom:1px solid var(--border)">' + NS.escape(i.createdBy || '') + '</td>' +
-      '<td style="padding:10px;border-bottom:1px solid var(--border)">' + (i.used ? 'Использован' : 'Свободен') + '</td>' +
-      '<td style="padding:10px;border-bottom:1px solid var(--border)">' + (i.usedBy ? NS.escape(i.usedBy) + (i.usedByUid? ' (UID '+NS.escape(i.usedByUid)+')':'') : '-') + '</td>' +
-      '<td style="padding:10px;border-bottom:1px solid var(--border)">' + (i.used ? '' : '<button class="btn btn-ghost" style="width:auto;padding:6px 10px" data-revoke="' + NS.escape(i.code) + '">Отозвать</button>') + '</td>' +
-    '</tr>').join('');
-    ib.querySelectorAll('[data-revoke]').forEach(b => b.addEventListener('click', async () => {
-      await NS.api("/api/site?action=admin", { method: "POST", body: { action: "revokeInvite", code: b.getAttribute('data-revoke') } });
-      load();
-    }));
 
     const ub = document.getElementById("usersBody");
     ub.innerHTML = (data.users || []).map(u => {
@@ -185,15 +124,6 @@
       load();
     }));
   }
-
-  document.getElementById("createInvite").addEventListener("click", async () => {
-    const { data } = await NS.api("/api/site?action=admin", { method: "POST", body: { action: "createInvite" } });
-    const r = document.getElementById("inviteRes");
-    if (data && data.ok) {
-      r.className = "result ok"; r.style.display="block"; r.textContent = "Создан: " + data.invite.code;
-    } else { r.className="result err"; r.style.display="block"; r.textContent="Ошибка"; }
-    load();
-  });
 
   load();
 </script>

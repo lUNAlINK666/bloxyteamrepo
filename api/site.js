@@ -490,7 +490,26 @@ async function requireAdmin(req, body) {
   const record = account.record;
   const uidNum = Number(record.uid);
   const role = record.role || getUserRole(record);
-  if (!(uidNum === 1 || uidNum === 2 || role === "owner" || role === "coder" || record.canManage || record.canInvite || isAdmin(record))) {
+  if (!(uidNum === 1 || uidNum === 2 || role === "owner" || role === "coder" || record.canManage || isAdmin(record))) {
+    return { ok: false, error: "forbidden" };
+  }
+  return { ok: true, account, record, session, author };
+}
+
+async function requireInvitePerm(req, body) {
+  const session = getSession(req, body);
+  if (!session) return { ok: false, error: "unauthorized" };
+  const author = await authorFromSession(session);
+  if (!author) return { ok: false, error: "unauthorized" };
+  const users = await loadUsers();
+  const account =
+    (author.uid ? findUserByUid(users, author.uid) : null) ||
+    (users[author.username] ? { username: author.username, record: users[author.username] } : null);
+  if (!account) return { ok: false, error: "unauthorized" };
+  const record = account.record;
+  const uidNum = Number(record.uid);
+  const role = record.role || getUserRole(record);
+  if (!(uidNum === 1 || uidNum === 2 || role === "owner" || role === "coder" || record.canInvite)) {
     return { ok: false, error: "forbidden" };
   }
   return { ok: true, account, record, session, author };
