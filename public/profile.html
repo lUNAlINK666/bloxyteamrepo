@@ -32,9 +32,8 @@
     <!-- Свой профиль -->
     <div class="card profile-wide" id="profile-view" style="display:none">
       <div class="profile-head">
-        <div class="avatar avatar-editable" id="avatar-box" title="Сменить аватар" style="width:72px;height:72px;font-size:30px">
-          <img class="avatar-img" id="avatar-img" alt="" style="display:none" onerror="this.style.display='none';var l=document.getElementById('avatar-letter');if(l)l.style.display='flex'" />
-          <span class="avatar-letter" id="avatar-letter" style="font-size:30px">?</span>
+        <div class="avatar avatar-editable" id="avatar-box" title="Сменить аватар" style="width:72px;height:72px">
+          <img class="avatar-img" id="avatar-img" alt="" />
           <div class="avatar-overlay">Сменить</div>
         </div>
         <input type="file" id="avatar-input" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" />
@@ -75,9 +74,7 @@
   const resultEl = document.getElementById("result");
 
   function fillProfile(data) {
-    document.getElementById("avatar-letter").textContent = (data.username || "?").charAt(0).toUpperCase();
-    document.getElementById("avatar-letter").style.display = "flex";
-    setAvatarImg(data.uid);
+    setAvatarImg(data.uid, false, data.username);
     document.getElementById("pv-name").textContent = data.username || "—";
     document.getElementById("pv-uid").textContent = data.uid || "—";
     const role = data.role || "member";
@@ -90,20 +87,16 @@
     document.getElementById("pv-activity").textContent = f.lastActivityMs ? NS.fmtAgo(f.lastActivityMs) : "—";
   }
 
-  function setAvatarImg(uid, bust) {
+  function setAvatarImg(uid, bust, username) {
     const img = document.getElementById("avatar-img");
-    const letter = document.getElementById("avatar-letter");
+    const name = encodeURIComponent(String(username || document.getElementById("pv-name").textContent || "?"));
+    const fallback = "https://ui-avatars.com/api/?name=" + name + "&background=151515&color=ffffff&bold=true&size=256";
     if (!uid) {
-      img.style.display = "none";
-      img.removeAttribute("src");
-      if (letter) letter.style.display = "flex";
+      img.src = fallback;
       return;
     }
-    img.style.display = "";
-    if (letter) letter.style.display = "flex";
     img.src = NS.avatarUrl(uid, bust);
-    img.onload = function(){ if (letter) letter.style.display = "none"; };
-    img.onerror = function(){ img.style.display = "none"; if (letter) letter.style.display = "flex"; };
+    img.onerror = function(){ img.src = fallback; };
   }
 
   const avatarBox = document.getElementById("avatar-box");
