@@ -47,7 +47,7 @@
   async function load() {
     const me = await NS.requireAuth();
     if (!me) return;
-    const { data } = await NS.api("/api/site?action=admin", { method: "GET" });
+    const { data } = await NS.api("/api/site?action=invites", { method: "GET" });
     if (!data || !data.ok) {
       alert("Нет доступа");
       location.href = "/";
@@ -56,7 +56,7 @@
     const ib = document.getElementById("invitesBody");
     ib.innerHTML = (data.invites || []).map(i => {
       const cb = i.createdBy ? (i.createdByUid ? '<a class="ulink" href="/u/' + encodeURIComponent(i.createdByUid) + '">' + NS.escape(i.createdBy) + '</a>' : NS.escape(i.createdBy)) : '-';
-      const ub = i.usedBy ? (i.usedByUid ? '<a class="ulink" href="/u/' + encodeURIComponent(i.usedByUid) + '">' + NS.escape(i.usedBy) + '</a>' + ' (UID ' + NS.escape(i.usedByUid) + ')' : NS.escape(i.usedBy)) : '-';
+      const ub = i.usedBy ? (i.usedByUid ? '<a class="ulink" href="/u/' + encodeURIComponent(i.usedByUid) + '">' + NS.escape(i.usedBy) + '</a>' + (i.usedByUid ? ' (UID ' + NS.escape(i.usedByUid) + ')' : '') : NS.escape(i.usedBy)) : '-';
       return '<tr>' +
         '<td style="padding:10px;border-bottom:1px solid var(--border);font-family:monospace">' + NS.escape(i.code) + '</td>' +
         '<td style="padding:10px;border-bottom:1px solid var(--border)">' + NS.fmtDate(i.createdAt) + '</td>' +
@@ -67,13 +67,13 @@
       '</tr>';
     }).join('');
     ib.querySelectorAll('[data-revoke]').forEach(b => b.addEventListener('click', async () => {
-      await NS.api("/api/site?action=admin", { method: "POST", body: { action: "revokeInvite", code: b.getAttribute('data-revoke') } });
+      await NS.api("/api/site?action=invites", { method: "POST", body: { action: "revokeInvite", code: b.getAttribute('data-revoke') } });
       load();
     }));
   }
 
   document.getElementById("createInvite").addEventListener("click", async () => {
-    const { data } = await NS.api("/api/site?action=admin", { method: "POST", body: { action: "createInvite" } });
+    const { data } = await NS.api("/api/site?action=invites", { method: "POST", body: { action: "createInvite" } });
     const r = document.getElementById("inviteRes");
     if (data && data.ok) {
       r.className = "result ok"; r.style.display="block"; r.textContent = "Создан: " + data.invite.code;

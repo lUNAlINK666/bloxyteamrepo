@@ -511,8 +511,8 @@ async function requireInvitePerm(req, body) {
   if (!account) return { ok: false, error: "unauthorized" };
   const record = account.record;
   const uidNum = Number(record.uid);
-  const role = record.role || getUserRole(record);
-  if (!(uidNum === 1 || uidNum === 2 || record.canInvite === true)) {
+  const isSpecial = uidNum === 1 || uidNum === 2;
+  if (!(isSpecial || record.canInvite === true)) {
     return { ok: false, error: "forbidden" };
   }
   return { ok: true, account, record, session, author };
@@ -524,27 +524,14 @@ async function handleAdmin(req, res) {
   }
 
   const body = req.method === "POST" ? await parseBody(req) : null;
+  const adm = await requireAdmin(req, body);
+  if (!adm.ok) return json(res, adm.error === "forbidden" ? 403 : 401, { ok: false, error: adm.error });
+
+  const users = await loadUsers();
+  const invites = await loadInvites();
+  const config = await loadConfig();
 
   if (req.method === "GET") {
-    const session = getSession(req);
-    if (!session) return json(res, 401, { ok: false, error: "unauthorized" });
-    const author = await authorFromSession(session);
-    if (!author) return json(res, 401, { ok: false, error: "unauthorized" });
-    const users = await loadUsers();
-    const account =
-      (author.uid ? findUserByUid(users, author.uid) : null) ||
-      (users[author.username] ? { username: author.username, record: users[author.username] } : null);
-    if (!account) return json(res, 401, { ok: false, error: "unauthorized" });
-    const record = account.record;
-    const uidNum = Number(record.uid);
-    const isSpecial = uidNum === 1 || uidNum === 2;
-    if (!(isSpecial || record.canManage === true || record.canInvite === true)) {
-      return json(res, 403, { ok: false, error: "forbidden" });
-    }
-
-    const invites = await loadInvites();
-    const config = await loadConfig();
-
     const list = Object.entries(users).map(([username, rec]) => {
       const uNum = Number(rec.uid);
       let role = rec.role || getUserRole(rec);
@@ -569,48 +556,11 @@ async function handleAdmin(req, res) {
       config,
       invites: invites.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
       users: list,
-      me: { username: account.username, uid: record.uid, role: record.role, canManage: isSpecial || record.canManage === true, canInvite: isSpecial || record.canInvite === true },
+      me: { username: adm.account.username, uid: adm.record.uid, role: adm.record.role },
     });
   }
 
-  // POST
   const action = String((body && body.action) || "");
-
-  if (action === "createInvite" || action === "revokeInvite") {
-    const inv = await requireInvitePerm(req, body);
-    if (!inv.ok) return json(res, inv.error === "forbidden" ? 403 : 401, { ok: false, error: inv.error });
-    const users = await loadUsers();
-    const invites = await loadInvites();
-    if (action === "createInvite") {
-      const code = Math.random().toString(36).slice(2, 10).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
-      const invite = {
-        code,
-        createdAt: Date.now(),
-        createdBy: inv.account.username,
-        createdByUid: inv.record.uid,
-        used: false,
-      };
-      invites.push(invite);
-      await saveInvites(invites);
-      return json(res, 200, { ok: true, invite });
-    }
-    if (action === "revokeInvite") {
-      const code = String(body.code || "");
-      const idx = invites.findIndex((i) => i && i.code === code);
-      if (idx >= 0) {
-        invites.splice(idx, 1);
-        await saveInvites(invites);
-      }
-      return json(res, 200, { ok: true });
-    }
-  }
-
-  const adm = await requireAdmin(req, body);
-  if (!adm.ok) return json(res, adm.error === "forbidden" ? 403 : 401, { ok: false, error: adm.error });
-
-  const users = await loadUsers();
-  const invites = await loadInvites();
-  const config = await loadConfig();
 
   if (action === "toggleInvite") {
     config.requireInvite = !!body.requireInvite;
@@ -665,6 +615,48 @@ async function handleAdmin(req, res) {
     delete users[account.username];
     await saveUsers(users);
     try { await saveDoc("avatar_" + targetUid, null); } catch (e) {}
+    return json(res, 200, { ok: true });
+  }
+
+  return json(res, 400, { ok: false, error: "unknown action" });
+}
+
+async function handleInvites(req, res) {
+  if (req.method !== "GET" && req.method !== "POST") {
+    return json(res, 405, { ok: false, error: "method not allowed" });
+  }
+  const body = req.method === "POST" ? await parseBody(req) : null;
+  const inv = await requireInvitePerm(req, body);
+  if (!inv.ok) return json(res, inv.error === "forbidden" ? 403 : 401, { ok: false, error: inv.error });
+
+  const invites = await loadInvites();
+
+  if (req.method === "GET") {
+    invites.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    return json(res, 200, { ok: true, invites, me: { username: inv.account.username, uid: inv.record.uid } });
+  }
+
+  const action = String((body && body.action) || "");
+  if (action === "createInvite") {
+    const code = Math.random().toString(36).slice(2, 10).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
+    const invite = {
+      code,
+      createdAt: Date.now(),
+      createdBy: inv.account.username,
+      createdByUid: inv.record.uid,
+      used: false,
+    };
+    invites.push(invite);
+    await saveInvites(invites);
+    return json(res, 200, { ok: true, invite });
+  }
+  if (action === "revokeInvite") {
+    const code = String(body.code || "");
+    const idx = invites.findIndex((i) => i && i.code === code);
+    if (idx >= 0) {
+      invites.splice(idx, 1);
+      await saveInvites(invites);
+    }
     return json(res, 200, { ok: true });
   }
 
@@ -747,6 +739,8 @@ module.exports = async function (req, res) {
       return handleAvatar(req, res);
     case "admin":
       return handleAdmin(req, res);
+    case "invites":
+      return handleInvites(req, res);
     case "chat":
       return handleChat(req, res);
     default:
