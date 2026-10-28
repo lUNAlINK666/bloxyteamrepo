@@ -169,19 +169,25 @@
     // Блок аватара: буква-заглушка + картинка поверх (при 404 картинка скрывается).
     avatarHTML(username, uid, cls) {
       const letter = NS.escape(String(username || "?").charAt(0).toUpperCase());
-      const img = uid
-        ? '<img class="avatar-img" alt="" src="' +
+      if (uid) {
+        return (
+          '<div class="' +
+          (cls || "avatar") +
+          '" data-avatar="1"><img class="avatar-img" alt="" src="' +
           NS.avatarUrl(uid) +
-          '" onload="var l=this.parentNode.querySelector(\'.avatar-letter\');if(l){l.style.display=\'none\';}" onerror="var l=this.parentNode.querySelector(\'.avatar-letter\');if(l){l.style.display=\'flex\';}this.style.display=\'none\'" />'
-        : "";
+          '" onerror="this.replaceWith((function(){var d=document.createElement(\'div\');d.className=\'' +
+          (cls || "avatar") +
+          '\';d.setAttribute(\'data-avatar\',\'1\');var s=document.createElement(\'span\');s.className=\'avatar-letter\';s.textContent=\'' +
+          letter +
+          '\';d.appendChild(s);return d;})())" /></div>'
+        );
+      }
       return (
         '<div class="' +
         (cls || "avatar") +
         '" data-avatar="1"><span class="avatar-letter">' +
         letter +
-        "</span>" +
-        img +
-        "</div>"
+        "</span></div>"
       );
     },
     // Принимает File, обрезает в квадрат 256×256 и отдаёт data-URL.

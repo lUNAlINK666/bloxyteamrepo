@@ -259,9 +259,9 @@ body {
 .card h2 { font-size: 22px; margin-bottom: 4px; }
 .card .sub { color: var(--muted); font-size: 14px; margin-bottom: 22px; }
 
-.avatar, .post-avatar { position: relative; overflow: hidden; border-radius: 50%; }
-.avatar-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; z-index: 1; box-sizing: border-box; display: block; }
-.avatar-letter { position: absolute; inset: 0; z-index: 0; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; line-height: 1; text-transform: uppercase; font-weight: 800; }
+.avatar, .post-avatar { position: relative; overflow: hidden; border-radius: 50%; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+.avatar-letter { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; line-height: 1; text-transform: uppercase; font-weight: 800; font-size: inherit; }
 .avatar-editable { cursor: pointer; }
 .avatar-overlay { position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.55); color:#fff; font-size:11px; font-weight:700; letter-spacing:.3px; opacity:0; transition:opacity .15s; border-radius:50%; }
 .avatar-editable:hover .avatar-overlay { opacity:1; }
