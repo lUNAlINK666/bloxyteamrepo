@@ -89,8 +89,10 @@
       messagesEl.innerHTML = msgs.map((m) => {
         const role = m.role || "member";
         const roleText = role === "owner" ? "Owner" : role === "coder" ? "Coder" : "Member";
+        const avatar = NS.avatarHTML(m.author, m.authorUid, "post-avatar");
+        const avatarLink = m.authorUid ? '<a class="chat-avatar-link" href="/u/' + encodeURIComponent(m.authorUid) + '">' + avatar + '</a>' : avatar;
         return '<div class="chat-msg">' +
-          NS.avatarHTML(m.author, m.authorUid, "post-avatar") +
+          avatarLink +
           '<div class="chat-body">' +
             '<div class="chat-head">' +
               NS.profileLink(m.author, m.authorUid) +

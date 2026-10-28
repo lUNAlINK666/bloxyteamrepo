@@ -172,12 +172,12 @@
       const img = uid
         ? '<img class="avatar-img" alt="" src="' +
           NS.avatarUrl(uid) +
-          '" onload="var l=this.parentNode.querySelector(\'.avatar-letter\');if(l)l.style.display=\'none\';" onerror="this.style.display=\'none\'" />'
+          '" onload="var l=this.parentNode.querySelector(\'.avatar-letter\');if(l){l.style.display=\'none\';}" onerror="var l=this.parentNode.querySelector(\'.avatar-letter\');if(l){l.style.display=\'flex\';}this.style.display=\'none\'" />'
         : "";
       return (
         '<div class="' +
         (cls || "avatar") +
-        '"><span class="avatar-letter">' +
+        '" data-avatar="1"><span class="avatar-letter">' +
         letter +
         "</span>" +
         img +
