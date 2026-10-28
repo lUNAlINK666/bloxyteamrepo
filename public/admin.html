@@ -134,17 +134,17 @@
       }
       trigger.addEventListener('click', (e) => {
         e.stopPropagation();
-        document.querySelectorAll('.custom-select.open').forEach(x => { if (x !== cs) { x.classList.remove('open'); const m = x.querySelector('.custom-select-menu'); if(m && m.parentNode===document.body) m.style.display='none'; } });
+        document.querySelectorAll('.custom-select-menu.open-menu').forEach(m => { m.classList.remove('open-menu'); m.style.display = 'none'; });
+        document.querySelectorAll('.custom-select.open').forEach(x => { if (x !== cs) x.classList.remove('open'); });
         if (cs.classList.contains('open')) {
           cs.classList.remove('open');
-          if (menu && menu.parentNode === document.body) menu.style.display = 'none';
+          if (menu) { menu.classList.remove('open-menu'); menu.style.display = 'none'; }
           return;
         }
-        if (menu && menu.parentNode !== document.body) {
-          document.body.appendChild(menu);
-        }
+        if (menu && menu.parentNode !== document.body) document.body.appendChild(menu);
         positionMenu(cs);
         if (menu) {
+          menu.classList.add('open-menu');
           menu.style.display = 'flex';
         }
         cs.classList.add('open');
@@ -155,13 +155,14 @@
         const uid = cs.getAttribute('data-uid');
         valEl.textContent = it.textContent;
         cs.classList.remove('open');
-        if (menu && menu.parentNode === document.body) menu.style.display = 'none';
+        if (menu) { menu.classList.remove('open-menu'); menu.style.display = 'none'; }
         await NS.api("/api/site?action=admin", { method: "POST", body: { action: "setRole", uid, role: v } });
         load();
       }));
     });
     document.addEventListener('click', () => {
-      document.querySelectorAll('.custom-select.open').forEach(x => { x.classList.remove('open'); const m = x.querySelector('.custom-select-menu'); if(m && m.parentNode===document.body) m.style.display='none'; });
+      document.querySelectorAll('.custom-select-menu.open-menu').forEach(m => { m.classList.remove('open-menu'); m.style.display = 'none'; });
+      document.querySelectorAll('.custom-select.open').forEach(x => x.classList.remove('open'));
     });
     window.addEventListener('scroll', () => {
       document.querySelectorAll('.custom-select.open').forEach(cs => positionMenu(cs));
