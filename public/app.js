@@ -175,11 +175,15 @@
           '<div class="' +
           (cls || "avatar") +
           '">' +
-          '<img class="avatar-img" alt="" src="' +
+          '<img class="avatar-img" alt="" data-uid="' +
+          uid +
+          '" data-name="' +
+          name +
+          '" src="' +
           NS.avatarUrl(uid) +
-          '" onerror="this.src=\'' +
-          fallback +
-          '\'" />' +
+          '" onerror="if(this.dataset.fallback) return; this.dataset.fallback=1; this.src=\'https://ui-avatars.com/api/?name=' +
+          name +
+          '&background=151515&color=ffffff&bold=true&size=256\'" />' +
           "</div>"
         );
       }
