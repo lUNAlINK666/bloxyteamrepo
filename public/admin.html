@@ -113,15 +113,31 @@
         '<td style="padding:10px;border-bottom:1px solid var(--border)">' + del + '</td>' +
       '</tr>';
     }).join('');
+    function positionMenu(cs) {
+      const trigger = cs.querySelector('.custom-select-trigger');
+      const menu = cs.querySelector('.custom-select-menu');
+      const rect = trigger.getBoundingClientRect();
+      menu.style.left = rect.left + window.scrollX + 'px';
+      menu.style.top = rect.bottom + window.scrollY + 4 + 'px';
+      menu.style.width = rect.width + 'px';
+    }
     ub.querySelectorAll('.custom-select').forEach(cs => {
       const trigger = cs.querySelector('.custom-select-trigger');
       const menu = cs.querySelector('.custom-select-menu');
       const items = cs.querySelectorAll('.custom-select-item');
       const valEl = cs.querySelector('.custom-select-value');
+      if (menu.parentNode !== document.body) document.body.appendChild(menu);
       trigger.addEventListener('click', (e) => {
         e.stopPropagation();
-        document.querySelectorAll('.custom-select.open').forEach(x => { if (x !== cs) x.classList.remove('open'); });
-        cs.classList.toggle('open');
+        document.querySelectorAll('.custom-select.open').forEach(x => { if (x !== cs) { x.classList.remove('open'); const m = x.querySelector('.custom-select-menu'); if(m) m.style.display='none'; } });
+        if (cs.classList.contains('open')) {
+          cs.classList.remove('open');
+          menu.style.display = 'none';
+          return;
+        }
+        positionMenu(cs);
+        menu.style.display = 'flex';
+        cs.classList.add('open');
       });
       items.forEach(it => it.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -129,12 +145,19 @@
         const uid = cs.getAttribute('data-uid');
         valEl.textContent = it.textContent;
         cs.classList.remove('open');
+        menu.style.display = 'none';
         await NS.api("/api/site?action=admin", { method: "POST", body: { action: "setRole", uid, role: v } });
         load();
       }));
     });
     document.addEventListener('click', () => {
-      document.querySelectorAll('.custom-select.open').forEach(x => x.classList.remove('open'));
+      document.querySelectorAll('.custom-select.open').forEach(x => { x.classList.remove('open'); const m = x.querySelector('.custom-select-menu'); if(m) m.style.display='none'; });
+    });
+    window.addEventListener('scroll', () => {
+      document.querySelectorAll('.custom-select.open').forEach(cs => positionMenu(cs));
+    }, true);
+    window.addEventListener('resize', () => {
+      document.querySelectorAll('.custom-select.open').forEach(cs => positionMenu(cs));
     });
     ub.querySelectorAll('input[data-manage]').forEach(inp => inp.addEventListener('change', async () => {
       if (inp.disabled) return;
