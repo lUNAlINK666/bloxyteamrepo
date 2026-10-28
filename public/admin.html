@@ -90,11 +90,15 @@
       const canDelete = (me.uid == "1" || me.uid == "2" || me.role === "owner" || me.role === "coder") && !isSpecial;
       let roleSel = u.role === "owner" ? "Owner" : u.role === "coder" ? "Coder" : "Member";
       if (canEdit) {
-        roleSel = '<select class="select-glass" data-uid="' + NS.escape(u.uid) + '">' +
-          '<option value="member"' + (u.role==='member'?' selected':'') + '>Member</option>' +
-          '<option value="coder"' + (u.role==='coder'?' selected':'') + '>Coder</option>' +
-          (canMakeOwner ? '<option value="owner"' + (u.role==='owner'?' selected':'') + '>Owner</option>' : '') +
-        '</select>';
+        const roles = [{v:'member',l:'Member'},{v:'coder',l:'Coder'}];
+        if (canMakeOwner) roles.push({v:'owner',l:'Owner'});
+        const cur = u.role || 'member';
+        roleSel = '<div class="custom-select" data-uid="' + NS.escape(u.uid) + '" data-role="' + NS.escape(cur) + '">' +
+          '<button class="custom-select-trigger" type="button"><span class="custom-select-value">' + NS.escape(cur === 'owner'?'Owner':cur === 'coder'?'Coder':'Member') + '</span><span class="custom-select-arrow"></span></button>' +
+          '<div class="custom-select-menu">' +
+          roles.map(r=>'<div class="custom-select-item" data-value="'+NS.escape(r.v)+'">'+NS.escape(r.l)+'</div>').join('') +
+          '</div>' +
+        '</div>';
       }
       const manage = (uidn === 1 || uidn === 2 || u.canManage === true);
       const invite = (uidn === 1 || uidn === 2 || u.canInvite === true);
@@ -109,11 +113,29 @@
         '<td style="padding:10px;border-bottom:1px solid var(--border)">' + del + '</td>' +
       '</tr>';
     }).join('');
-    ub.querySelectorAll('select[data-uid]').forEach(sel => sel.addEventListener('change', async () => {
-      const uid = sel.getAttribute('data-uid');
-      await NS.api("/api/site?action=admin", { method: "POST", body: { action: "setRole", uid, role: sel.value } });
-      load();
-    }));
+    ub.querySelectorAll('.custom-select').forEach(cs => {
+      const trigger = cs.querySelector('.custom-select-trigger');
+      const menu = cs.querySelector('.custom-select-menu');
+      const items = cs.querySelectorAll('.custom-select-item');
+      const valEl = cs.querySelector('.custom-select-value');
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.custom-select.open').forEach(x => { if (x !== cs) x.classList.remove('open'); });
+        cs.classList.toggle('open');
+      });
+      items.forEach(it => it.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const v = it.getAttribute('data-value');
+        const uid = cs.getAttribute('data-uid');
+        valEl.textContent = it.textContent;
+        cs.classList.remove('open');
+        await NS.api("/api/site?action=admin", { method: "POST", body: { action: "setRole", uid, role: v } });
+        load();
+      }));
+    });
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.custom-select.open').forEach(x => x.classList.remove('open'));
+    });
     ub.querySelectorAll('input[data-manage]').forEach(inp => inp.addEventListener('change', async () => {
       if (inp.disabled) return;
       const uid = inp.getAttribute('data-manage');
