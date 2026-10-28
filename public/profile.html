@@ -33,8 +33,8 @@
     <div class="card profile-wide" id="profile-view" style="display:none">
       <div class="profile-head">
         <div class="avatar avatar-editable" id="avatar-box" title="Сменить аватар">
+          <img class="avatar-img" id="avatar-img" alt="" style="display:none" onerror="this.style.display='none';var l=document.getElementById('avatar-letter');if(l)l.style.display='flex'" />
           <span class="avatar-letter" id="avatar-letter">?</span>
-          <img class="avatar-img" id="avatar-img" alt="" style="display:none" onload="var l=document.getElementById('avatar-letter');if(l)l.style.display='none'" onerror="this.style.display='none'" />
           <div class="avatar-overlay">Сменить</div>
         </div>
         <input type="file" id="avatar-input" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" />
@@ -76,6 +76,7 @@
 
   function fillProfile(data) {
     document.getElementById("avatar-letter").textContent = (data.username || "?").charAt(0).toUpperCase();
+    document.getElementById("avatar-letter").style.display = "flex";
     setAvatarImg(data.uid);
     document.getElementById("pv-name").textContent = data.username || "—";
     document.getElementById("pv-uid").textContent = data.uid || "—";
@@ -91,13 +92,18 @@
 
   function setAvatarImg(uid, bust) {
     const img = document.getElementById("avatar-img");
+    const letter = document.getElementById("avatar-letter");
     if (!uid) {
       img.style.display = "none";
       img.removeAttribute("src");
+      if (letter) letter.style.display = "flex";
       return;
     }
     img.style.display = "";
+    if (letter) letter.style.display = "flex";
     img.src = NS.avatarUrl(uid, bust);
+    img.onload = function(){ if (letter) letter.style.display = "none"; };
+    img.onerror = function(){ img.style.display = "none"; if (letter) letter.style.display = "flex"; };
   }
 
   const avatarBox = document.getElementById("avatar-box");
