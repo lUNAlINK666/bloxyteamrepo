@@ -492,8 +492,8 @@ async function requireAdmin(req, body) {
   if (!account) return { ok: false, error: "unauthorized" };
   const record = account.record;
   const uidNum = Number(record.uid);
-  const role = record.role || getUserRole(record);
-  if (!(uidNum === 1 || uidNum === 2 || record.canManage === true || isAdmin(record))) {
+  const isSpecial = uidNum === 1 || uidNum === 2;
+  if (!(isSpecial || record.canManage === true)) {
     return { ok: false, error: "forbidden" };
   }
   return { ok: true, account, record, session, author };
@@ -538,7 +538,7 @@ async function handleAdmin(req, res) {
     const record = account.record;
     const uidNum = Number(record.uid);
     const isSpecial = uidNum === 1 || uidNum === 2;
-    if (!(isSpecial || record.canManage === true || record.canInvite === true || isAdmin(record))) {
+    if (!(isSpecial || record.canManage === true || record.canInvite === true)) {
       return json(res, 403, { ok: false, error: "forbidden" });
     }
 
@@ -551,13 +551,13 @@ async function handleAdmin(req, res) {
       if (uNum === 1) role = "coder";
       if (uNum === 2) role = "owner";
       const s = uNum === 1 || uNum === 2;
-      const canManage = s || rec.canManage === true || isAdmin(rec);
-      const canInvite = s || rec.canInvite === true || isAdmin(rec);
+      const canManage = s || rec.canManage === true;
+      const canInvite = s || rec.canInvite === true;
       return {
         username,
         uid: rec.uid || null,
         role,
-        isAdmin: s || isAdmin(rec),
+        isAdmin: s,
         canManage,
         canInvite,
         createdAtMs: rec.createdAtMs || null,
