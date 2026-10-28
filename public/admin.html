@@ -90,7 +90,7 @@
       const canDelete = (me.uid == "1" || me.uid == "2" || me.role === "owner" || me.role === "coder") && !isSpecial;
       let roleSel = u.role === "owner" ? "Owner" : u.role === "coder" ? "Coder" : "Member";
       if (canEdit) {
-        roleSel = '<select data-uid="' + NS.escape(u.uid) + '" style="background:var(--surface-input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 8px">' +
+        roleSel = '<select class="select-glass" data-uid="' + NS.escape(u.uid) + '">' +
           '<option value="member"' + (u.role==='member'?' selected':'') + '>Member</option>' +
           '<option value="coder"' + (u.role==='coder'?' selected':'') + '>Coder</option>' +
           (canMakeOwner ? '<option value="owner"' + (u.role==='owner'?' selected':'') + '>Owner</option>' : '') +
