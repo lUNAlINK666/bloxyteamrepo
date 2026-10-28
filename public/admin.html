@@ -122,14 +122,16 @@
       menu.style.left = rect.left + 'px';
       menu.style.top = rect.bottom + 4 + 'px';
       menu.style.width = rect.width + 'px';
-      menu.style.zIndex = '99999';
+      menu.style.zIndex = '2147483647';
     }
     ub.querySelectorAll('.custom-select').forEach(cs => {
       const trigger = cs.querySelector('.custom-select-trigger');
       const menu = cs.querySelector('.custom-select-menu');
       const items = cs.querySelectorAll('.custom-select-item');
       const valEl = cs.querySelector('.custom-select-value');
-      if (menu && menu.parentNode !== document.body) document.body.appendChild(menu);
+      if (menu && menu.parentNode !== document.body) {
+        document.body.appendChild(menu);
+      }
       trigger.addEventListener('click', (e) => {
         e.stopPropagation();
         document.querySelectorAll('.custom-select.open').forEach(x => { if (x !== cs) { x.classList.remove('open'); const m = x.querySelector('.custom-select-menu'); if(m && m.parentNode===document.body) m.style.display='none'; } });
@@ -138,9 +140,13 @@
           if (menu && menu.parentNode === document.body) menu.style.display = 'none';
           return;
         }
-        if (menu && menu.parentNode !== document.body) document.body.appendChild(menu);
+        if (menu && menu.parentNode !== document.body) {
+          document.body.appendChild(menu);
+        }
         positionMenu(cs);
-        if (menu) menu.style.display = 'flex';
+        if (menu) {
+          menu.style.display = 'flex';
+        }
         cs.classList.add('open');
       });
       items.forEach(it => it.addEventListener('click', async (e) => {
