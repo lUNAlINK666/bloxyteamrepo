@@ -94,7 +94,7 @@
         if (data.token) localStorage.setItem(TOKEN_KEY, data.token);
         localStorage.setItem(
           USER_KEY,
-          JSON.stringify({ username: data.username, uid: data.uid })
+          JSON.stringify({ username: data.username, uid: data.uid, canInvite: !!data.canInvite, canManage: !!data.canManage })
         );
         return data;
       }

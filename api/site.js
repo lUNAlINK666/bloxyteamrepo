@@ -629,10 +629,15 @@ async function handleInvites(req, res) {
   const inv = await requireInvitePerm(req, body);
   if (!inv.ok) return json(res, inv.error === "forbidden" ? 403 : 401, { ok: false, error: inv.error });
 
+  const users = await loadUsers();
   const invites = await loadInvites();
 
   if (req.method === "GET") {
     invites.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    for (const i of invites) {
+      if (!i.createdByUid && i.createdBy && users[i.createdBy]) i.createdByUid = users[i.createdBy].uid;
+      if (!i.usedByUid && i.usedBy && users[i.usedBy]) i.usedByUid = users[i.usedBy].uid;
+    }
     return json(res, 200, { ok: true, invites, me: { username: inv.account.username, uid: inv.record.uid } });
   }
 
