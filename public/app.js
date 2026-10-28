@@ -8,30 +8,27 @@
 
   // ---- Тема оформления: system | dark | light ---------------------------------
   function systemTheme() {
-    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
+    return "dark";
   }
   function themePref() {
-    return localStorage.getItem(THEME_KEY) || "system";
+    return "dark";
   }
   function effectiveTheme() {
-    const pref = themePref();
-    return pref === "system" ? systemTheme() : pref;
+    return "dark";
   }
   function applyTheme() {
-    const eff = effectiveTheme();
-    document.documentElement.setAttribute("data-theme", eff);
-    const icon = eff === "dark" ? "/favicon-white.png" : "/favicon-black.png";
+    document.documentElement.setAttribute("data-theme", "dark");
+    const icon = "/favicon-white.png";
     const fav = document.getElementById("favicon");
     if (fav) fav.href = icon;
     document.querySelectorAll(".nav-logo-icon").forEach((el) => {
       el.src = icon;
     });
-    return eff;
+    try { localStorage.setItem(THEME_KEY, "dark"); } catch (e) {}
+    return "dark";
   }
   function setThemePref(pref) {
-    localStorage.setItem(THEME_KEY, pref);
+    try { localStorage.setItem(THEME_KEY, "dark"); } catch (e) {}
     applyTheme();
   }
 
@@ -329,26 +326,12 @@
       '<div class="setting-row">' +
       '<div class="label">Тема оформления</div>' +
       '<div class="seg" data-theme-seg>' +
-      '<button type="button" data-theme-opt="system">Как в системе</button>' +
-      '<button type="button" data-theme-opt="dark">Тёмная</button>' +
-      '<button type="button" data-theme-opt="light">Светлая</button>' +
+      '<button type="button" data-theme-opt="dark" class="active">Тёмная</button>' +
       "</div></div>" +
       "</div></div>";
     document.body.appendChild(el);
-
-    const seg = el.querySelector("[data-theme-seg]");
-    const syncSeg = () => {
-      const pref = themePref();
-      seg.querySelectorAll("[data-theme-opt]").forEach((b) =>
-        b.classList.toggle("active", b.getAttribute("data-theme-opt") === pref)
-      );
-    };
-    seg.querySelectorAll("[data-theme-opt]").forEach((b) => {
-      b.addEventListener("click", () => {
-        setThemePref(b.getAttribute("data-theme-opt"));
-        syncSeg();
-      });
-    });
+    try { localStorage.setItem(THEME_KEY, "dark"); } catch(e){}
+    applyTheme();
     const close = () => el.classList.remove("open");
     el.querySelector("[data-close]").addEventListener("click", close);
     el.addEventListener("click", (e) => {
@@ -358,7 +341,10 @@
       if (e.key === "Escape") close();
     });
     el._open = () => {
-      syncSeg();
+      try { localStorage.setItem(THEME_KEY, "dark"); } catch(e){}
+      applyTheme();
+      const seg = el.querySelector("[data-theme-seg]");
+      if (seg) seg.querySelectorAll("[data-theme-opt]").forEach((b)=>b.classList.toggle("active", b.getAttribute("data-theme-opt") === "dark"));
       el.classList.add("open");
     };
   }
@@ -369,15 +355,7 @@
     if (el && el._open) el._open();
   };
 
-  // Системная тема изменилась — обновляем, если выбран режим «как в системе».
-  if (window.matchMedia) {
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => {
-      if (themePref() === "system") applyTheme();
-    };
-    if (mq.addEventListener) mq.addEventListener("change", onChange);
-    else if (mq.addListener) mq.addListener(onChange);
-  }
+  // Тема зафиксирована на тёмной
 
   // Применяем тему сразу (сначала — чтобы не мигало при загрузке страницы).
   applyTheme();
