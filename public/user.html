@@ -18,8 +18,7 @@
     <div id="content" style="display:none">
       <div class="profile-head">
         <div class="avatar" id="avatar-box">
-          <span class="avatar-letter" id="avatar-letter">?</span>
-          <img class="avatar-img" id="avatar-img" alt="" style="display:none" onload="var l=document.getElementById('avatar-letter');if(l)l.style.display='none'" onerror="this.style.display='none'" />
+          <img class="avatar-img" id="avatar-img" alt="" />
         </div>
         <div class="who">
           <h2 id="u-name">—</h2>
@@ -67,8 +66,7 @@
   function setAvatarImg(id) {
     const img = document.getElementById("avatar-img");
     if (!id) return;
-    img.style.display = "";
-    img.src = NS.avatarUrl(id);
+    img.src = NS.avatarUrl(id) + (NS.avatarUrl(id).indexOf('?') >= 0 ? '&' : '?') + 'v=' + Date.now();
   }
 
   (async () => {
@@ -98,7 +96,6 @@
     }
 
     document.title = "HyperFox Chat — " + data.username;
-    document.getElementById("avatar-letter").textContent = (data.username || "?").charAt(0).toUpperCase();
     setAvatarImg(data.uid);
     document.getElementById("u-name").textContent = data.username || "—";
     document.getElementById("u-uid").textContent = data.uid || "—";

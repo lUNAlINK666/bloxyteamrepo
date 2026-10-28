@@ -168,25 +168,19 @@
     },
     // Блок аватара: буква-заглушка + картинка поверх (при 404 картинка скрывается).
     avatarHTML(username, uid, cls) {
-      const name = encodeURIComponent(String(username || "?"));
-      const fallback = "https://ui-avatars.com/api/?name=" + name + "&background=151515&color=ffffff&bold=true&size=256";
       if (uid) {
         return (
           '<div class="' +
           (cls || "avatar") +
           '">' +
-          '<img class="avatar-img" alt="" data-uid="' +
-          uid +
-          '" data-name="' +
-          name +
-          '" src="' +
+          '<img class="avatar-img" alt="" src="' +
           NS.avatarUrl(uid) +
-          '" onerror="if(this.dataset.fallback) return; this.dataset.fallback=1; this.src=\'https://ui-avatars.com/api/?name=' +
-          name +
-          '&background=151515&color=ffffff&bold=true&size=256\'" />' +
+          '" />' +
           "</div>"
         );
       }
+      const name = encodeURIComponent(String(username || "?"));
+      const fallback = "https://ui-avatars.com/api/?name=" + name + "&background=151515&color=ffffff&bold=true&size=256";
       return (
         '<div class="' +
         (cls || "avatar") +

@@ -18,6 +18,7 @@
 // Существующие эндпоинты чита (/api/sync, /api/bind, /api/skins, /api/unbind,
 // /api/status, /api/register, /api/token, /api/free, /api/logo) НЕ затронуты.
 
+const https = require("https");
 const {
   loadUsers,
   saveUsers,
@@ -72,6 +73,26 @@ function parseAvatarDataUrl(dataUrl) {
   return { contentType, buffer };
 }
 
+function fetchDefaultAvatar(name) {
+  return new Promise((resolve, reject) => {
+    const n = encodeURIComponent(String(name || "?").trim() || "?");
+    const url = "https://ui-avatars.com/api/?name=" + n + "&background=151515&color=ffffff&bold=true&size=256&format=png";
+    https
+      .get(url, (resp) => {
+        const chunks = [];
+        resp.on("data", (d) => chunks.push(d));
+        resp.on("end", () => {
+          if (resp.statusCode >= 200 && resp.statusCode < 300) {
+            resolve(Buffer.concat(chunks));
+          } else {
+            reject(new Error("bad status"));
+          }
+        });
+      })
+      .on("error", reject);
+  });
+}
+
 async function handleAvatar(req, res) {
   const body = req.method === "POST" ? await parseBody(req) : null;
 
@@ -106,15 +127,39 @@ async function handleAvatar(req, res) {
 
   const query = req.query || {};
   let uid = query.uid ? String(query.uid) : "";
+  let username = "";
   if (!uid && query.username) {
     const users = await loadUsers();
     const un = normalizeUsername(query.username);
-    if (un && users[un]) uid = String(users[un].uid || "");
+    if (un && users[un]) {
+      uid = String(users[un].uid || "");
+      username = users[un].username || un;
+    }
   }
   if (!uid) return json(res, 404, { ok: false, error: "no avatar" });
 
-  const doc = await loadDoc("avatar_" + uid, null);
-  if (!doc || !doc.data) return json(res, 404, { ok: false, error: "no avatar" });
+  const users = await loadUsers();
+  if (!username) {
+    const acc = findUserByUid(users, uid);
+    if (acc) username = acc.username;
+  }
+
+  let doc = await loadDoc("avatar_" + uid, null);
+  if (!doc || !doc.data) {
+    try {
+      const buf = await fetchDefaultAvatar(username || uid);
+      const updatedAtMs = Date.now();
+      doc = {
+        contentType: "image/png",
+        data: buf.toString("base64"),
+        updatedAtMs,
+        generated: true,
+      };
+      await saveDoc("avatar_" + uid, doc);
+    } catch (e) {
+      return json(res, 404, { ok: false, error: "no avatar" });
+    }
+  }
 
   const etag = '"av' + (doc.updatedAtMs || 0) + '"';
   const headers = {
