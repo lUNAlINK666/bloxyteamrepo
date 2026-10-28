@@ -522,31 +522,45 @@ async function handleAdmin(req, res) {
   if (req.method !== "GET" && req.method !== "POST") {
     return json(res, 405, { ok: false, error: "method not allowed" });
   }
-  const body = req.method === "POST" ? await parseBody(req) : null;
-  const adm = await requireAdmin(req, body);
-  if (!adm.ok) return json(res, adm.error === "forbidden" ? 403 : 401, { ok: false, error: adm.error });
 
-  const users = await loadUsers();
-  const invites = await loadInvites();
-  const config = await loadConfig();
+  const body = req.method === "POST" ? await parseBody(req) : null;
 
   if (req.method === "GET") {
-    const list = Object.entries(users).map(([username, record]) => {
-      const uidNum = Number(record.uid);
-      let role = record.role || getUserRole(record);
-      if (uidNum === 1) role = "coder";
-      if (uidNum === 2) role = "owner";
-      const isSpecial = uidNum === 1 || uidNum === 2;
-      const canManage = isSpecial || record.canManage === true || isAdmin(record);
-      const canInvite = isSpecial || record.canInvite === true || isAdmin(record);
+    const session = getSession(req);
+    if (!session) return json(res, 401, { ok: false, error: "unauthorized" });
+    const author = await authorFromSession(session);
+    if (!author) return json(res, 401, { ok: false, error: "unauthorized" });
+    const users = await loadUsers();
+    const account =
+      (author.uid ? findUserByUid(users, author.uid) : null) ||
+      (users[author.username] ? { username: author.username, record: users[author.username] } : null);
+    if (!account) return json(res, 401, { ok: false, error: "unauthorized" });
+    const record = account.record;
+    const uidNum = Number(record.uid);
+    const isSpecial = uidNum === 1 || uidNum === 2;
+    if (!(isSpecial || record.canManage === true || record.canInvite === true || isAdmin(record))) {
+      return json(res, 403, { ok: false, error: "forbidden" });
+    }
+
+    const invites = await loadInvites();
+    const config = await loadConfig();
+
+    const list = Object.entries(users).map(([username, rec]) => {
+      const uNum = Number(rec.uid);
+      let role = rec.role || getUserRole(rec);
+      if (uNum === 1) role = "coder";
+      if (uNum === 2) role = "owner";
+      const s = uNum === 1 || uNum === 2;
+      const canManage = s || rec.canManage === true || isAdmin(rec);
+      const canInvite = s || rec.canInvite === true || isAdmin(rec);
       return {
         username,
-        uid: record.uid || null,
+        uid: rec.uid || null,
         role,
-        isAdmin: uidNum === 1 || uidNum === 2 || isAdmin(record),
+        isAdmin: s || isAdmin(rec),
         canManage,
         canInvite,
-        createdAtMs: record.createdAtMs || null,
+        createdAtMs: rec.createdAtMs || null,
       };
     });
     list.sort((a, b) => Number(a.uid || 0) - Number(b.uid || 0));
@@ -555,25 +569,49 @@ async function handleAdmin(req, res) {
       config,
       invites: invites.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
       users: list,
-      me: { username: adm.account.username, uid: adm.record.uid, role: adm.record.role },
+      me: { username: account.username, uid: record.uid, role: record.role, canManage: isSpecial || record.canManage === true, canInvite: isSpecial || record.canInvite === true },
     });
   }
 
   // POST
-  const action = String(body.action || "");
-  if (action === "createInvite") {
-    const code = Math.random().toString(36).slice(2, 10).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
-    const invite = {
-      code,
-      createdAt: Date.now(),
-      createdBy: adm.account.username,
-      createdByUid: adm.record.uid,
-      used: false,
-    };
-    invites.push(invite);
-    await saveInvites(invites);
-    return json(res, 200, { ok: true, invite });
+  const action = String((body && body.action) || "");
+
+  if (action === "createInvite" || action === "revokeInvite") {
+    const inv = await requireInvitePerm(req, body);
+    if (!inv.ok) return json(res, inv.error === "forbidden" ? 403 : 401, { ok: false, error: inv.error });
+    const users = await loadUsers();
+    const invites = await loadInvites();
+    if (action === "createInvite") {
+      const code = Math.random().toString(36).slice(2, 10).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
+      const invite = {
+        code,
+        createdAt: Date.now(),
+        createdBy: inv.account.username,
+        createdByUid: inv.record.uid,
+        used: false,
+      };
+      invites.push(invite);
+      await saveInvites(invites);
+      return json(res, 200, { ok: true, invite });
+    }
+    if (action === "revokeInvite") {
+      const code = String(body.code || "");
+      const idx = invites.findIndex((i) => i && i.code === code);
+      if (idx >= 0) {
+        invites.splice(idx, 1);
+        await saveInvites(invites);
+      }
+      return json(res, 200, { ok: true });
+    }
   }
+
+  const adm = await requireAdmin(req, body);
+  if (!adm.ok) return json(res, adm.error === "forbidden" ? 403 : 401, { ok: false, error: adm.error });
+
+  const users = await loadUsers();
+  const invites = await loadInvites();
+  const config = await loadConfig();
+
   if (action === "toggleInvite") {
     config.requireInvite = !!body.requireInvite;
     await saveConfig(config);
@@ -602,7 +640,7 @@ async function handleAdmin(req, res) {
     if (!account) return json(res, 404, { ok: false, error: "user not found" });
     const tuid = Number(account.record.uid);
     if (tuid === 1 || tuid === 2) return json(res, 403, { ok: false, error: "cannot change special users" });
-    if (!(adm.record.uid === "1" || adm.record.uid === "2" || getUserRole(adm.record) === "owner" || getUserRole(adm.record) === "coder")) {
+    if (!(adm.record.uid === "1" || adm.record.uid === "2")) {
       return json(res, 403, { ok: false, error: "forbidden" });
     }
     if (perm === "invite") {
@@ -615,22 +653,13 @@ async function handleAdmin(req, res) {
     await saveUsers(users);
     return json(res, 200, { ok: true });
   }
-  if (action === "revokeInvite") {
-    const code = String(body.code || "");
-    const idx = invites.findIndex((i) => i && i.code === code);
-    if (idx >= 0) {
-      invites.splice(idx, 1);
-      await saveInvites(invites);
-    }
-    return json(res, 200, { ok: true });
-  }
   if (action === "deleteUser") {
     const targetUid = String(body.uid || "");
     const account = findUserByUid(users, targetUid);
     if (!account) return json(res, 404, { ok: false, error: "user not found" });
     const tuid = Number(account.record.uid);
     if (tuid === 1 || tuid === 2) return json(res, 403, { ok: false, error: "cannot delete special users" });
-    if (adm.record.uid !== "1" && adm.record.uid !== "2" && getUserRole(adm.record) !== "owner" && getUserRole(adm.record) !== "coder") {
+    if (adm.record.uid !== "1" && adm.record.uid !== "2") {
       return json(res, 403, { ok: false, error: "forbidden" });
     }
     delete users[account.username];
