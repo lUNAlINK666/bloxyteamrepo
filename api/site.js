@@ -493,7 +493,7 @@ async function requireAdmin(req, body) {
   const record = account.record;
   const uidNum = Number(record.uid);
   const role = record.role || getUserRole(record);
-  if (!(uidNum === 1 || uidNum === 2 || role === "owner" || role === "coder" || record.canManage || isAdmin(record))) {
+  if (!(uidNum === 1 || uidNum === 2 || record.canManage === true || isAdmin(record))) {
     return { ok: false, error: "forbidden" };
   }
   return { ok: true, account, record, session, author };
@@ -512,7 +512,7 @@ async function requireInvitePerm(req, body) {
   const record = account.record;
   const uidNum = Number(record.uid);
   const role = record.role || getUserRole(record);
-  if (!(uidNum === 1 || uidNum === 2 || role === "owner" || role === "coder" || record.canInvite)) {
+  if (!(uidNum === 1 || uidNum === 2 || record.canInvite === true)) {
     return { ok: false, error: "forbidden" };
   }
   return { ok: true, account, record, session, author };
@@ -536,8 +536,9 @@ async function handleAdmin(req, res) {
       let role = record.role || getUserRole(record);
       if (uidNum === 1) role = "coder";
       if (uidNum === 2) role = "owner";
-      const canManage = uidNum === 1 || uidNum === 2 || role === "owner" || role === "coder" || !!record.canManage || isAdmin(record);
-      const canInvite = canManage || !!record.canInvite;
+      const isSpecial = uidNum === 1 || uidNum === 2;
+      const canManage = isSpecial || record.canManage === true || isAdmin(record);
+      const canInvite = isSpecial || record.canInvite === true || isAdmin(record);
       return {
         username,
         uid: record.uid || null,
